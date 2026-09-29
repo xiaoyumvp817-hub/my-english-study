@@ -1,0 +1,63 @@
+:root {
+  --bg: oklch(0.975 0.008 95);
+  --surface: oklch(0.995 0.004 95);
+  --ink: oklch(0.24 0.02 60);
+  --muted: oklch(0.55 0.02 60);
+  --line: oklch(0.87 0.01 95);
+  --accent: oklch(0.62 0.13 78);
+  --accent-strong: oklch(0.55 0.14 75);
+  --accent-ink: oklch(0.99 0.01 95);
+  --correct: oklch(0.5 0.13 150);
+  --correct-bg: oklch(0.5 0.13 150 / 0.12);
+  --wrong: oklch(0.53 0.19 25);
+  --wrong-bg: oklch(0.53 0.19 25 / 0.1);
+
+  --font-serif: Georgia, 'Times New Roman', 'Songti SC', 'SimSun', ui-serif, serif;
+  --font-sans: system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei',
+    sans-serif;
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: oklch(0.205 0.012 60);
+    --surface: oklch(0.25 0.012 60);
+    --ink: oklch(0.92 0.01 95);
+    --muted: oklch(0.68 0.015 60);
+    --line: oklch(0.34 0.012 60);
+    --accent: oklch(0.78 0.12 78);
+    --accent-strong: oklch(0.82 0.12 80);
+    --accent-ink: oklch(0.2 0.02 60);
+    --correct: oklch(0.72 0.14 150);
+    --correct-bg: oklch(0.72 0.14 150 / 0.14);
+    --wrong: oklch(0.7 0.17 25);
+    --wrong-bg: oklch(0.7 0.17 25 / 0.14);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.55;
+  min-height: 100svh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
