@@ -37,6 +37,17 @@ describe('parseExcel', () => {
     expect(items).toHaveLength(0)
     expect(warnings).toHaveLength(1)
   })
+
+  it('reads the optional third "图片" column into image', () => {
+    const buffer = toBuffer([
+      ['英文', '中文释义', '图片'],
+      ['Hello', '你好', 'images/u5-001.jpg'],
+      ['World', '世界'],
+    ])
+    const { items } = parseExcel(buffer)
+    expect(items[0].image).toBe('images/u5-001.jpg')
+    expect(items[1].image).toBeUndefined()
+  })
 })
 
 describe('buildTemplateWorkbook', () => {

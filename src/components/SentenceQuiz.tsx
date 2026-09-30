@@ -3,7 +3,10 @@ import type { FormEvent } from 'react'
 import type { TemplateItem } from '../types'
 import { tokenize, wordTokens, isCorrect } from '../lib/tokenize'
 import { speak } from '../lib/speech'
+import { nextHint } from '../lib/hints'
+import type { HintLevel, HintState } from '../lib/hints'
 import SentenceDisplay from './SentenceDisplay'
+import CoverImage from './CoverImage'
 
 export interface WrongWord {
   word: string
@@ -15,6 +18,12 @@ interface Props {
   continueLabel: string
   onComplete: () => void
   onWrongWords?: (wrongs: WrongWord[]) => void
+}
+
+const HINT_LABELS: Record<HintLevel, string> = {
+  1: '💡 提示：首字母',
+  2: '🔊 提示：朗读单词',
+  3: '👁️ 揭示答案',
 }
 
 /**
@@ -29,6 +38,12 @@ export default function SentenceQuiz({ item, continueLabel, onComplete, onWrongW
   const [answers, setAnswers] = useState<string[]>(() => words.map(() => ''))
   const [results, setResults] = useState<boolean[]>(() => words.map(() => false))
   const [checked, setChecked] = useState(false)
+  const [revealed, setRevealed] = useState<boolean[]>(() => words.map(() => false))
+  const [hint, setHint] = useState<HintState | null>(null)
+
+  const wordTexts = useMemo(() => words.map((w) => w.text), [words])
+  const nextAction = nextHint(wordTexts, answers, hint)
+  const hintLabel = nextAction ? HINT_LABELS[nextAction.level] : '💡 提示'
 
   function handleChange(wordIndex: number, value: string) {
     setAnswers((prev) => {
@@ -56,10 +71,44 @@ export default function SentenceQuiz({ item, continueLabel, onComplete, onWrongW
     }
   }
 
+  function handleHint() {
+    if (!nextAction) return
+    const { wordIndex, level } = nextAction
+
+    if (level === 1) {
+      const letter = words[wordIndex].text[0]
+      setAnswers((prev) => {
+        const next = [...prev]
+        next[wordIndex] = letter
+        return next
+      })
+    } else if (level === 2) {
+      speak(words[wordIndex].text)
+    } else {
+      // Level 3: reveal the full word. This counts as wrong, so it enters
+      // the wrongbook for SM-2 review via onWrongWords.
+      const word = words[wordIndex].text
+      setAnswers((prev) => {
+        const next = [...prev]
+        next[wordIndex] = word
+        return next
+      })
+      setRevealed((prev) => {
+        const next = [...prev]
+        next[wordIndex] = true
+        return next
+      })
+      onWrongWords?.([{ word, wordIndex }])
+    }
+
+    setHint({ wordIndex, level })
+  }
+
   const allCorrect = checked && results.every(Boolean)
 
   return (
     <section className="game-card">
+      {item.image && <CoverImage src={item.image} className="item-image" />}
       <p className="translation">{item.zh || '（无中文释义）'}</p>
 
       <button type="button" className="speak" onClick={() => speak(item.en)} title="朗读整句">
@@ -72,6 +121,7 @@ export default function SentenceQuiz({ item, continueLabel, onComplete, onWrongW
           answers={answers}
           checked={checked}
           results={results}
+          revealed={revealed}
           onChange={handleChange}
         />
 
@@ -87,7 +137,12 @@ export default function SentenceQuiz({ item, continueLabel, onComplete, onWrongW
               {continueLabel}
             </button>
           ) : (
-            <button type="submit" className="primary">检查</button>
+            <>
+              <button type="button" className="ghost" onClick={handleHint} disabled={!nextAction}>
+                {hintLabel}
+              </button>
+              <button type="submit" className="primary">检查</button>
+            </>
           )}
         </div>
       </form>

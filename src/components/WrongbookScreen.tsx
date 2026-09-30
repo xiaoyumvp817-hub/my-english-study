@@ -38,8 +38,8 @@ export default function WrongbookScreen({ entries, stats, onBack, onStartReview,
       </header>
 
       <div className="tab-row">
-        <button className={`tab ${tab === 'review' ? 'is-active' : ''}`} onClick={() => setTab('review')}>今日复习</button>
-        <button className={`tab ${tab === 'words' ? 'is-active' : ''}`} onClick={() => setTab('words')}>我的错词</button>
+        <button className={`tab ${tab === 'review' ? 'is-active liquid-glass' : ''}`} onClick={() => setTab('review')}>今日复习</button>
+        <button className={`tab ${tab === 'words' ? 'is-active liquid-glass' : ''}`} onClick={() => setTab('words')}>我的错词</button>
       </div>
 
       {tab === 'review' ? (
@@ -71,7 +71,7 @@ export default function WrongbookScreen({ entries, stats, onBack, onStartReview,
                       <button className="entry-card" onClick={() => onPractice(e)}>
                         <div className="entry-top">
                           <span className="entry-word">{e.word}</span>
-                          <span className={`badge ${b.cls}`}>{b.text}</span>
+                          <span className={`badge liquid-glass ${b.cls}`}>{b.text}</span>
                         </div>
                         <span className="entry-en">{e.en}</span>
                         <span className="entry-zh">{e.zh}</span>

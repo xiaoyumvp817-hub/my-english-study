@@ -21,14 +21,14 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: oklch(0.205 0.012 60);
-    --surface: oklch(0.25 0.012 60);
-    --ink: oklch(0.92 0.01 95);
-    --muted: oklch(0.68 0.015 60);
-    --line: oklch(0.34 0.012 60);
+    --bg: oklch(0 0 0);
+    --surface: oklch(0.13 0 0);
+    --ink: oklch(0.98 0 0);
+    --muted: oklch(0.72 0 0);
+    --line: oklch(0.32 0 0);
     --accent: oklch(0.78 0.12 78);
-    --accent-strong: oklch(0.82 0.12 80);
-    --accent-ink: oklch(0.2 0.02 60);
+    --accent-strong: oklch(0.84 0.12 80);
+    --accent-ink: oklch(0.18 0 0);
     --correct: oklch(0.72 0.14 150);
     --correct-bg: oklch(0.72 0.14 150 / 0.14);
     --wrong: oklch(0.7 0.17 25);

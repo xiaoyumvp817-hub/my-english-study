@@ -1,4 +1,5 @@
 import type { TemplateItem } from '../types'
+import CoverImage from './CoverImage'
 
 interface Props {
   templateName: string
@@ -31,8 +32,11 @@ export default function SentenceList({ templateName, items, warnings, onSelect, 
         {items.map((item, i) => (
           <li key={item.id}>
             <button className="sentence-card" onClick={() => onSelect(i)}>
-              <span className="sentence-en">{item.en}</span>
-              <span className="sentence-zh">{item.zh || '（无中文释义）'}</span>
+              {item.image && <CoverImage src={item.image} className="sentence-thumb" />}
+              <span className="sentence-body">
+                <span className="sentence-en">{item.en}</span>
+                <span className="sentence-zh">{item.zh || '（无中文释义）'}</span>
+              </span>
             </button>
           </li>
         ))}

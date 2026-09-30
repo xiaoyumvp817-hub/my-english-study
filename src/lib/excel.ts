@@ -48,17 +48,18 @@ export function parseExcel(buffer: ArrayBuffer | Uint8Array): ParseResult {
     const cells = row.map((c) => (c == null ? '' : String(c).trim()))
     const en = cells[0] ?? ''
     const zh = cells[1] ?? ''
+    const image = cells[2] || undefined
 
     if (!en && !zh) return
     if (isHeaderRow(en)) return
 
     if (en && zh) {
-      items.push({ id: `xlsx-${seq++}`, en, zh })
+      items.push({ id: `xlsx-${seq++}`, en, zh, image })
     } else if (en && !zh) {
       if (HAS_CJK.test(en)) {
         warnings.push(`第 ${idx + 1} 行缺少英文，已跳过`)
       } else {
-        items.push({ id: `xlsx-${seq++}`, en, zh: '' })
+        items.push({ id: `xlsx-${seq++}`, en, zh: '', image })
         warnings.push(`第 ${idx + 1} 行缺少中文释义`)
       }
     } else {

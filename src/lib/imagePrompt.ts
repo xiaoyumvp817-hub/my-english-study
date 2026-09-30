@@ -1,0 +1,160 @@
+/**
+ * Turns a study phrase into a text-to-image prompt. Most of the U5 list is
+ * abstract (verb collocations, grammar patterns, poetic phrases) which a T2I
+ * model cannot draw directly, so we curate a concrete scene per phrase,
+ * keyed by the English phrase. Unknown phrases fall back to the phrase text.
+ */
+
+export const STYLE =
+  "soft children's storybook illustration, warm pastel colors, flat vector style, clean, minimal, no text, no watermark"
+
+/** Normalizes a phrase so ellipsis / punctuation / case / whitespace variants match. */
+export function canonicalKey(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]/g, '')
+}
+
+// [English phrase, concrete scene] pairs, in no particular order.
+const SCENES: Array<[string, string]> = [
+  ['a quarter of', 'a pie cut into four equal slices, one slice highlighted'],
+  ['a half of', 'an apple cut into two equal halves'],
+  ['collect', 'a child collecting colorful autumn leaves into a basket'],
+  ['collector', 'a person proudly showing a shelf of collected stamps and coins'],
+  ['collection', 'a neatly arranged shelf of seashells and rocks'],
+  ['collect sunshine', 'a child catching golden sunshine into a glass jar'],
+  ['have a collection of...', 'a child showing off a box of collected treasures'],
+  ['send', 'a person putting a letter into a mailbox'],
+  ['send up', 'a rocket launching into the sky'],
+  ['send into', 'a small paper boat being pushed out into a river'],
+  ['send out', 'a person sending paper boats out across a pond'],
+  ['send sb sth = send sth to sb', 'one child handing a wrapped gift box to another child'],
+  ['send sb to do', 'a parent sending a child to buy vegetables at the market'],
+  ['send sb. to sp.', 'a child carrying a backpack walking to school'],
+  ['rise', 'the sun rising over green hills'],
+  ['rise up', 'a hot air balloon rising into the sky'],
+  ['rise up to the leaf', 'a tiny water droplet rising up a plant stem toward a green leaf'],
+  ['mix', 'two colors of paint being stirred together'],
+  ['mixture', 'a bowl of mixed fruits and nuts'],
+  ['mix A and B = mix A with B', 'a hand mixing flour and water in a bowl'],
+  ['a mixture of sth', 'a colorful bowl of mixed candies'],
+  ['produce', 'a factory producing rows of colorful toys'],
+  ['production', 'an assembly line making boxed products'],
+  ['product', 'shelves full of boxed products'],
+  ['breathe', 'a person taking a deep breath of fresh air outdoors'],
+  ['breath', 'a visible breath of air on a cold winter morning'],
+  ['breathe in', 'a person inhaling deeply, chest rising'],
+  ['breathe out', 'a person gently exhaling a visible soft stream of air'],
+  ['get dark', 'the sky darkening at sunset'],
+  ['in the dark', 'a child holding a flashlight in a dark room'],
+  ['take a rest = take a break', 'a tired person sitting under a tree resting'],
+  ['the rest of …', 'one slice of pizza eaten, the rest still on the plate'],
+  ['nature', 'mountains, trees and a river in a lush landscape'],
+  ['natural', 'a natural landscape with wildflowers and a stream'],
+  ['explore the amazing world of plants', 'a curious child with a magnifying glass looking at plants'],
+  ['start to do', 'a runner at the starting line about to run'],
+  ['start doing', 'a child beginning to draw a picture'],
+  ['start ... with ...', 'a storybook opening to its first page'],
+  ['work in', 'people working inside an office'],
+  ['in each workshop', 'workers in a workshop making things'],
+  ['through the stem', 'water traveling up through the inside of a plant stem'],
+  ['be useful to sb./ for sth.', 'a multi-tool showing many useful functions'],
+  ['the growth of the plant', 'a seedling growing into a tall plant in stages'],
+  ['mean to do', 'a person with a lightbulb planning to do something'],
+  ['mean a lot', 'a person holding a heart, something precious'],
+  ['mean doing', 'a sign illustrating the meaning of an action'],
+  ['mean sth to sb', 'a gift that is very special to someone'],
+  ['millions of plants', 'an endless field of green plants'],
+  ['more than', 'two piles of apples, one pile bigger than the other'],
+  ['be sure that', 'a confident child giving a thumbs up'],
+  ['at the top of', 'a flag planted at the top of a mountain'],
+  ['come into', 'a child walking into a bright room'],
+  ['do something for sb', 'a child helping an elderly person cross the street'],
+  ['grow', 'a seed sprouting into a small seedling'],
+  ['growth', 'a small plant growing taller over time'],
+  ['grow up', 'a baby growing into a child and then an adult'],
+  ['a big part of', 'a large slice of a pie'],
+  ['culture', 'colorful cultural symbols, masks, lanterns and costumes'],
+  ['cultural', 'people in traditional clothing celebrating a festival'],
+  ['top three', 'a podium with the top three winners'],
+  ["the world's top three food plants", 'three big food plants: rice, wheat and corn'],
+  ['people around the world', 'children from different countries holding hands around a globe'],
+  ['in different ways', 'two paths leading to the same mountain top'],
+  ['in East Asia', 'a map highlighting East Asia'],
+  ['about 900 years ago', 'an old village in ancient times'],
+  ['over 600 corn dishes', 'a table full of many different corn dishes'],
+  ['use …as', 'a person using a scarf as a belt'],
+  ['use sth to do', 'a person using a hammer to fix a chair'],
+  ['use it to make toys', 'a child using paper to make toys'],
+  ['use … for', 'a person using a basket for carrying apples'],
+  ['pay attention to', 'a student raising a hand, listening carefully'],
+  ['a traditional Mexican food', 'a plate of tacos with colorful toppings'],
+  ['make ... from', 'a person making a paper bag from old newspaper'],
+  ['make ... with', 'a person making a sandwich with bread and cheese'],
+  ['be made from', 'a wooden chair made from logs'],
+  ['be made of', 'a house made of bricks'],
+  ['be good for your health', 'a person eating fresh fruit and vegetables'],
+  ['the way of doing', 'a step-by-step instruction showing how to do something'],
+  ['the way to do', 'a map showing the route to a destination'],
+  ['try to do', 'a child trying hard to lift a heavy box'],
+  ["try one's best to do", 'a runner pushing hard toward the finish line'],
+  ['try doing sth', 'a child trying to ride a bicycle for the first time'],
+  ['give permission', 'a teacher nodding and allowing a student'],
+  ['health', 'a healthy heart symbol next to an apple'],
+  ['healthy', 'a fit person jogging in the park'],
+  ['health problem', 'a person with a thermometer feeling unwell'],
+  ['keep healthy', 'a person exercising while eating an apple'],
+  ['be popular with', 'a crowd of children gathered around a popular toy'],
+  ['the key to the door', 'a key opening a door'],
+  ['the key part of', 'the most important piece highlighted in a puzzle'],
+  ['a piece of news', 'a newspaper with a big headline'],
+  ['the secret of sth.', 'a treasure chest hiding a secret'],
+  ['keep a secret', 'a child with a finger to the lips, shushing'],
+  ['chat', 'two friends chatting happily'],
+  ['chat on the phone', 'two friends talking on the phone'],
+  ['chat to / with sb', 'two people talking to each other'],
+  ['chat about', 'friends talking about a book together'],
+  ['relax oneself', 'a person relaxing on a hammock'],
+  ['connect', 'two puzzle pieces connecting together'],
+  ['connection', 'a chain of links connected together'],
+  ['connect A to B', 'a cable connecting a phone to a charger'],
+  ['connect A with B', 'a bridge connecting two islands'],
+  ['connection between A and B', 'a rope linking two hands'],
+  ['not only… but also…', 'a student good at both sports and music'],
+  ['as…as', 'two identical flowers side by side'],
+  ['as many teahouses as leaves in the cup of tea', 'many teahouses next to a cup of tea with leaves'],
+  ['used to do', 'an old photo of a child who has now grown up'],
+  ['get / be used to doing', 'a person comfortably doing a daily routine'],
+  ['be used to do', 'a knife used to cut an apple'],
+  ['share sth with sb', 'a child sharing a snack with a friend'],
+  ['share their news', 'friends sharing news around a table'],
+  ['study abroad', 'a student with a suitcase and a passport at an airport'],
+  ['prefer A to B', 'a child choosing an apple over a candy'],
+  ['prefer doing A to doing B', 'a child preferring drawing over watching TV'],
+  ['prefer to do', 'a person choosing to read a book'],
+  ['prefer to do A rather than do B', 'a child choosing to play outside rather than stay indoors'],
+  ['a cup of warm tea', 'a steaming cup of warm tea on a wooden table'],
+  ['feel like', 'a person daydreaming, feeling as light as a floating cloud'],
+  ["It's no secret that…", 'a speaker sharing an open secret with a crowd'],
+  ['make tea for them', 'a person pouring tea for friends'],
+  ['choose', 'a person choosing between two options'],
+  ['choice', 'two doors, choosing one'],
+  ['compare', 'two apples side by side being compared'],
+  ['comparison', 'a balance scale comparing two objects'],
+  ['compare A with B', 'two similar flowers compared side by side'],
+  ['compare A to B', 'comparing the moon to a silver plate'],
+  ['be similar to sth', 'two similar leaves side by side'],
+  ['search for sth', 'a person searching with a magnifying glass'],
+]
+
+const SCENE_BY_KEY = new Map(SCENES.map(([phrase, scene]) => [canonicalKey(phrase), scene]))
+
+/** Builds a full T2I prompt from an English phrase + its Chinese meaning. */
+export function buildImagePrompt(en: string, zh: string): string {
+  const scene = SCENE_BY_KEY.get(canonicalKey(en))
+  const subject = scene ?? (en.trim() || zh)
+  return `${subject}, ${STYLE}`
+}
+
+/** Stable filename for the i-th item (0-based), e.g. u5-001.jpg. */
+export function imageFileName(index: number): string {
+  return `u5-${String(index + 1).padStart(3, '0')}.jpg`
+}

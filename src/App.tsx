@@ -112,7 +112,13 @@ function App() {
     )
   }
 
-  return <div className="app">{screen}</div>
+  return (
+    <div className="app">
+      <div className="screen" key={view}>
+        {screen}
+      </div>
+    </div>
+  )
 }
 
 export default App

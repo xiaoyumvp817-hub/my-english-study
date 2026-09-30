@@ -12,7 +12,7 @@ export default function StreakBar({ stats }: Props) {
   return (
     <div className="streak-bar">
       <span className="streak">🔥 {stats.streakDays} 天</span>
-      <span className="level">Lv.{level}</span>
+      <span className="level liquid-glass">Lv.{level}</span>
       <div className="xp-bar">
         <div className="xp-fill" style={{ width: `${pct}%` }} />
       </div>

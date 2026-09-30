@@ -6,6 +6,7 @@ interface Props {
   answers: string[]
   checked: boolean
   results: boolean[]
+  revealed: boolean[]
   onChange: (wordIndex: number, value: string) => void
 }
 
@@ -23,7 +24,7 @@ function spaceBefore(tokens: Token[], index: number): boolean {
   return !OPENING.has(prev.text)
 }
 
-export default function SentenceDisplay({ tokens, answers, checked, results, onChange }: Props) {
+export default function SentenceDisplay({ tokens, answers, checked, results, revealed, onChange }: Props) {
   let wordIndex = -1
 
   return (
@@ -41,13 +42,16 @@ export default function SentenceDisplay({ tokens, answers, checked, results, onC
         const i = wordIndex
         const target = token.text
         const value = answers[i] ?? ''
+        const isRevealed = revealed[i] ?? false
         const correct = checked && results[i]
         const wrong = checked && !results[i]
+        const locked = correct || isRevealed
 
         const className = [
           'word-input',
-          correct ? 'is-correct' : '',
-          wrong ? 'is-wrong' : '',
+          isRevealed ? 'is-revealed' : '',
+          !isRevealed && correct ? 'is-correct' : '',
+          !isRevealed && wrong ? 'is-wrong' : '',
         ]
           .filter(Boolean)
           .join(' ')
@@ -65,10 +69,10 @@ export default function SentenceDisplay({ tokens, answers, checked, results, onC
             autoCorrect="off"
             spellCheck={false}
             aria-invalid={wrong}
-            readOnly={correct}
-            title={correct ? '点击朗读' : undefined}
+            readOnly={locked}
+            title={locked ? '点击朗读' : undefined}
             onClick={() => {
-              if (correct) speak(target)
+              if (locked) speak(target)
             }}
             onChange={(e) => onChange(i, e.target.value)}
           />
