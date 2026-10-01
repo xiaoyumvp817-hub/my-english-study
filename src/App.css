@@ -244,6 +244,44 @@
   border: 1px solid var(--line);
 }
 
+/* 学习状态圆点：绿=已学完，红=需复习 */
+.status-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.status-dot.learned {
+  background: var(--correct);
+}
+
+.status-dot.review {
+  background: var(--wrong);
+}
+
+.status-legend {
+  display: flex;
+  gap: 14px;
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.status-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.status-legend .status-dot {
+  width: 10px;
+  height: 10px;
+  margin-left: 0;
+}
+
 /* ---------- Game ---------- */
 
 .game-top {
@@ -895,6 +933,66 @@
 @media (prefers-reduced-motion: reduce) {
   .screen,
   .sentence-list li {
+    animation: none;
+  }
+}
+
+/* ---------- Study summary modal ---------- */
+
+.summary-overlay {
+  position: fixed;
+  inset: 0;
+  background: oklch(0 0 0 / 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 100;
+  animation: summary-fade 0.2s ease both;
+}
+
+.summary-modal {
+  width: 100%;
+  max-width: 360px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 28px 24px;
+  text-align: center;
+  box-shadow: 0 20px 60px oklch(0 0 0 / 0.2);
+  animation: summary-pop 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.summary-title {
+  margin: 0 0 20px;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.summary-stats {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.summary-motto {
+  color: var(--muted);
+  margin: 0 0 20px;
+}
+
+@keyframes summary-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes summary-pop {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .summary-overlay,
+  .summary-modal {
     animation: none;
   }
 }

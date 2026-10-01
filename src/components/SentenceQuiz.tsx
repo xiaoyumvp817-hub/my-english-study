@@ -18,6 +18,7 @@ interface Props {
   continueLabel: string
   onComplete: () => void
   onWrongWords?: (wrongs: WrongWord[]) => void
+  onCompleted?: () => void
 }
 
 const HINT_LABELS: Record<HintLevel, string> = {
@@ -31,7 +32,7 @@ const HINT_LABELS: Record<HintLevel, string> = {
  * word blanks, and the check / continue flow. Shared by normal practice
  * and review.
  */
-export default function SentenceQuiz({ item, continueLabel, onComplete, onWrongWords }: Props) {
+export default function SentenceQuiz({ item, continueLabel, onComplete, onWrongWords, onCompleted }: Props) {
   const tokens = useMemo(() => tokenize(item.en), [item])
   const words = useMemo(() => wordTokens(tokens), [tokens])
 
@@ -64,6 +65,7 @@ export default function SentenceQuiz({ item, continueLabel, onComplete, onWrongW
       if (!ok) wrongs.push({ word: words[i].text, wordIndex: i })
     })
     if (wrongs.length > 0) onWrongWords?.(wrongs)
+    else onCompleted?.()
 
     const firstWrong = r.findIndex((ok) => !ok)
     if (firstWrong >= 0) {

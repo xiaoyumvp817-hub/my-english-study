@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { emptyStats, addXp, levelForXp, xpProgress, recordStudy, dateKey, loadStats } from './stats'
+import { emptyStats, addXp, levelForXp, xpProgress, recordStudy, dateKey, loadStats, applyReviewAnswer } from './stats'
 
 afterEach(() => { vi.unstubAllGlobals() })
 
@@ -30,14 +30,14 @@ describe('recordStudy', () => {
     const s = recordStudy(emptyStats(), '2026-09-28')
     expect(s.streakDays).toBe(1)
     expect(s.lastStudyDate).toBe('2026-09-28')
-    expect(s.reviewCount).toBe(1)
+    expect(s.totalLearned).toBe(1)
   })
 
   it('same-day study does not double-count the streak', () => {
     const once = recordStudy(emptyStats(), '2026-09-28')
     const twice = recordStudy(once, '2026-09-28')
     expect(twice.streakDays).toBe(1)
-    expect(twice.reviewCount).toBe(2)
+    expect(twice.totalLearned).toBe(2)
   })
 
   it('consecutive days increment the streak', () => {
@@ -81,5 +81,28 @@ describe('loadStats', () => {
     expect(s.xp).toBe(50)
     expect(s.streakDays).toBe(3)
     expect(s.dailyHistory).toEqual({})
+  })
+
+  it('migrates legacy reviewCount into totalLearned', () => {
+    vi.stubGlobal('window', { localStorage: { getItem: () => JSON.stringify({ reviewCount: 7 }) } })
+    expect(loadStats().totalLearned).toBe(7)
+  })
+})
+
+describe('applyReviewAnswer', () => {
+  it('counts a correct review answer into totals', () => {
+    const s = applyReviewAnswer(emptyStats(), 10, true, '2026-09-28')
+    expect(s.totalLearned).toBe(1)
+    expect(s.dailyHistory['2026-09-28']).toBe(1)
+    expect(s.xp).toBe(10)
+  })
+
+  it('does not count a wrong review answer but still refreshes the streak', () => {
+    const s = applyReviewAnswer(emptyStats(), 5, false, '2026-09-28')
+    expect(s.totalLearned).toBe(0)
+    expect(s.dailyHistory['2026-09-28']).toBe(0)
+    expect(s.streakDays).toBe(1)
+    expect(s.lastStudyDate).toBe('2026-09-28')
+    expect(s.xp).toBe(5)
   })
 })

@@ -6,13 +6,15 @@ import SentenceList from './components/SentenceList'
 import GameScreen from './components/GameScreen'
 import WrongbookScreen from './components/WrongbookScreen'
 import ReviewSession from './components/ReviewSession'
+import StudySummary from './components/StudySummary'
 import type { WrongWord } from './components/SentenceQuiz'
 import { loadTemplates, saveTemplates, makeTemplate } from './lib/templates'
 import type { Template, TemplateSort } from './lib/templates'
 import { loadEntries, saveEntries, recordWrong, reviewEntry, dueEntries } from './lib/wrongbook'
 import type { WrongEntry } from './lib/wrongbook'
-import { loadStats, saveStats, addXp, recordStudy, dateKey } from './lib/stats'
+import { loadStats, saveStats, recordStudy, applyReviewAnswer, dateKey } from './lib/stats'
 import type { Stats } from './lib/stats'
+import { loadLearned, saveLearned, commitLearned } from './lib/learned'
 import type { QuizType } from './lib/quiz'
 import { xpForAnswer } from './lib/quiz'
 import './App.css'
@@ -29,10 +31,13 @@ function App() {
   const [entries, setEntries] = useState<WrongEntry[]>(() => loadEntries())
   const [stats, setStats] = useState<Stats>(() => loadStats())
   const [reviewEntries, setReviewEntries] = useState<WrongEntry[]>([])
+  const [showSummary, setShowSummary] = useState(false)
+  const [learned, setLearned] = useState<string[]>(() => loadLearned())
 
   useEffect(() => { saveTemplates(templates) }, [templates])
   useEffect(() => { saveEntries(entries) }, [entries])
   useEffect(() => { saveStats(stats) }, [stats])
+  useEffect(() => { saveLearned(learned) }, [learned])
 
   function handleParsed(result: ParseResult, fileName: string) {
     setPendingUpload({ result, fileName })
@@ -60,10 +65,27 @@ function App() {
   function handleSelect(index: number) { setCurrentIndex(index); setView('play') }
   function goList() { setCurrentIndex(null); setView('list') }
   function goLibrary() { setCurrentIndex(null); setView('library') }
-  function handleNext() {
+  function handleSentenceCompleted() {
+    if (currentIndex === null || !currentTemplate) return
+    const item = currentTemplate.items[currentIndex]
+    if (!item) return
+    const now = Date.now()
+    const { learned: next, added } = commitLearned(learned, item.en)
+    if (!added) return
+    setLearned(next)
+    setStats((prev) => recordStudy(prev, dateKey(new Date(now)), 1))
+  }
+  function handleSentenceComplete() {
     if (currentIndex === null || !currentTemplate) return
     if (currentIndex < currentTemplate.items.length - 1) setCurrentIndex(currentIndex + 1)
-    else goList()
+    else {
+      goList()
+      setShowSummary(true)
+    }
+  }
+  function handleEndSession() {
+    goList()
+    setShowSummary(true)
   }
   function handleWrongWords(wrongs: WrongWord[]) {
     if (currentIndex === null || !currentTemplate) return
@@ -86,7 +108,7 @@ function App() {
     if (!target) return 0
     const xp = xpForAnswer(type, q)
     setEntries((prev) => prev.map((e) => (e.key === key ? reviewEntry(e, q, now) : e)))
-    setStats((prev) => recordStudy(addXp(prev, xp), dateKey(new Date(now))))
+    setStats((prev) => applyReviewAnswer(prev, xp, q >= 3, dateKey(new Date(now))))
     return xp
   }
   function handleClear() { setEntries([]) }
@@ -95,12 +117,12 @@ function App() {
   if (view === 'play' && currentIndex !== null && currentTemplate) {
     screen = (
       <GameScreen key={currentIndex} item={currentTemplate.items[currentIndex]} index={currentIndex}
-        total={currentTemplate.items.length} onNext={handleNext} onBack={goList} onWrongWords={handleWrongWords} />
+        total={currentTemplate.items.length} onNext={handleSentenceComplete} onEnd={handleEndSession} onWrongWords={handleWrongWords} onCompleted={handleSentenceCompleted} />
     )
   } else if (view === 'name' && pendingUpload) {
     screen = <NamePrompt fileName={pendingUpload.fileName} count={pendingUpload.result.items.length} onConfirm={handleNameConfirm} onCancel={handleNameCancel} />
   } else if (view === 'list' && currentTemplate) {
-    screen = <SentenceList templateName={currentTemplate.name} items={currentTemplate.items} warnings={currentTemplate.warnings} onSelect={handleSelect} onBack={goLibrary} />
+    screen = <SentenceList templateName={currentTemplate.name} items={currentTemplate.items} warnings={currentTemplate.warnings} learned={new Set(learned)} entries={entries} onSelect={handleSelect} onBack={goLibrary} />
   } else if (view === 'wrongbook') {
     screen = <WrongbookScreen entries={entries} stats={stats} onBack={goLibrary} onStartReview={handleStartReview} onPractice={handlePractice} onClear={handleClear} />
   } else if (view === 'review') {
@@ -117,6 +139,13 @@ function App() {
       <div className="screen" key={view}>
         {screen}
       </div>
+      {showSummary && (
+        <StudySummary
+          today={stats.dailyHistory[dateKey(new Date())] ?? 0}
+          total={stats.totalLearned}
+          onClose={() => setShowSummary(false)}
+        />
+      )}
     </div>
   )
 }

@@ -2,12 +2,13 @@ export interface Stats {
   xp: number
   streakDays: number
   lastStudyDate: string
-  reviewCount: number
+  /** 累计学习词条数（练习完成一句 +1，复习答对一题 +1）。 */
+  totalLearned: number
   dailyHistory: Record<string, number>
 }
 
 export function emptyStats(): Stats {
-  return { xp: 0, streakDays: 0, lastStudyDate: '', reviewCount: 0, dailyHistory: {} }
+  return { xp: 0, streakDays: 0, lastStudyDate: '', totalLearned: 0, dailyHistory: {} }
 }
 
 export function levelForXp(xp: number): number {
@@ -42,10 +43,15 @@ function isYesterday(prev: string, today: string): boolean {
 export function recordStudy(stats: Stats, today: string, count = 1): Stats {
   const dailyHistory = { ...stats.dailyHistory, [today]: (stats.dailyHistory[today] ?? 0) + count }
   if (stats.lastStudyDate === today) {
-    return { ...stats, reviewCount: stats.reviewCount + count, dailyHistory }
+    return { ...stats, totalLearned: stats.totalLearned + count, dailyHistory }
   }
   const streakDays = isYesterday(stats.lastStudyDate, today) ? stats.streakDays + 1 : 1
-  return { ...stats, streakDays, lastStudyDate: today, reviewCount: stats.reviewCount + count, dailyHistory }
+  return { ...stats, streakDays, lastStudyDate: today, totalLearned: stats.totalLearned + count, dailyHistory }
+}
+
+/** 复习答题后更新统计：答对计入学习数量 +1，答错不计入；两者都加 XP 并刷新连续学习。 */
+export function applyReviewAnswer(stats: Stats, xp: number, correct: boolean, today: string): Stats {
+  return recordStudy(addXp(stats, xp), today, correct ? 1 : 0)
 }
 
 const STORAGE_KEY = 'stats:v1'
@@ -56,7 +62,13 @@ export function loadStats(): Stats {
     const raw = window.localStorage.getItem(STORAGE_KEY)
     if (!raw) return emptyStats()
     const p = JSON.parse(raw) as Partial<Stats>
-    return { ...emptyStats(), ...p, dailyHistory: p.dailyHistory ?? {} }
+    const legacy = p as Partial<Stats> & { reviewCount?: number }
+    return {
+      ...emptyStats(),
+      ...p,
+      totalLearned: p.totalLearned ?? legacy.reviewCount ?? 0,
+      dailyHistory: p.dailyHistory ?? {},
+    }
   } catch {
     return emptyStats()
   }
