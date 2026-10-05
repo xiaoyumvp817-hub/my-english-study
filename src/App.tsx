@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import type { ParseResult } from './types'
+import type { ParseResult, TemplateItem } from './types'
 import TemplateLibrary from './components/TemplateLibrary'
 import NamePrompt from './components/NamePrompt'
 import SentenceList from './components/SentenceList'
+import SelectionReview from './components/SelectionReview'
 import GameScreen from './components/GameScreen'
 import WrongbookScreen from './components/WrongbookScreen'
 import ReviewSession from './components/ReviewSession'
@@ -19,7 +20,14 @@ import type { QuizType } from './lib/quiz'
 import { xpForAnswer } from './lib/quiz'
 import './App.css'
 
-type View = 'library' | 'name' | 'list' | 'play' | 'wrongbook' | 'review'
+type View = 'library' | 'name' | 'list' | 'play' | 'wrongbook' | 'review' | 'study'
+
+type StudyPhase = 'select' | 'type'
+interface StudySession {
+  items: TemplateItem[]
+  index: number
+  phase: StudyPhase
+}
 
 function App() {
   const [templates, setTemplates] = useState<Template[]>(() => loadTemplates())
@@ -33,6 +41,7 @@ function App() {
   const [reviewEntries, setReviewEntries] = useState<WrongEntry[]>([])
   const [showSummary, setShowSummary] = useState(false)
   const [learned, setLearned] = useState<string[]>(() => loadLearned())
+  const [session, setSession] = useState<StudySession | null>(null)
 
   useEffect(() => { saveTemplates(templates) }, [templates])
   useEffect(() => { saveEntries(entries) }, [entries])
@@ -113,16 +122,82 @@ function App() {
   }
   function handleClear() { setEntries([]) }
 
+  function handleStartStudy(items: TemplateItem[]) {
+    setSession({ items, index: 0, phase: 'select' })
+    setView('study')
+  }
+  function handleSelectWrong(item: TemplateItem) {
+    const now = Date.now()
+    setEntries((prev) => recordWrong(prev, { en: item.en, zh: item.zh, word: item.en, wordIndex: 0 }, now))
+  }
+  function handleSelectNext() {
+    setSession((s) => (s ? { ...s, index: s.index + 1 } : s))
+  }
+  function handleSelectFinish() {
+    setSession((s) => (s ? { ...s, phase: 'type', index: 0 } : s))
+  }
+  function handleExitStudy() {
+    setSession(null)
+    goList()
+  }
+  function handleSessionNext() {
+    if (!session) return
+    if (session.index < session.items.length - 1) {
+      setSession({ ...session, index: session.index + 1 })
+    } else {
+      setSession(null)
+      goList()
+      setShowSummary(true)
+    }
+  }
+  function handleSessionWrongWords(wrongs: WrongWord[]) {
+    if (!session) return
+    const item = session.items[session.index]
+    if (!item) return
+    const now = Date.now()
+    setEntries((prev) => wrongs.reduce((acc, w) => recordWrong(acc, { en: item.en, zh: item.zh, word: w.word, wordIndex: w.wordIndex }, now), prev))
+  }
+  function handleSessionCompleted() {
+    if (!session) return
+    const item = session.items[session.index]
+    if (!item) return
+    const now = Date.now()
+    const { learned: next, added } = commitLearned(learned, item.en)
+    if (!added) return
+    setLearned(next)
+    setStats((prev) => recordStudy(prev, dateKey(new Date(now)), 1))
+  }
+
   let screen
   if (view === 'play' && currentIndex !== null && currentTemplate) {
     screen = (
       <GameScreen key={currentIndex} item={currentTemplate.items[currentIndex]} index={currentIndex}
         total={currentTemplate.items.length} onNext={handleSentenceComplete} onEnd={handleEndSession} onWrongWords={handleWrongWords} onCompleted={handleSentenceCompleted} />
     )
+  } else if (view === 'study' && session) {
+    if (session.phase === 'select') {
+      screen = (
+        <SelectionReview
+          key={session.index}
+          items={session.items}
+          index={session.index}
+          total={session.items.length}
+          onWrong={handleSelectWrong}
+          onNext={handleSelectNext}
+          onFinish={handleSelectFinish}
+          onExit={handleExitStudy}
+        />
+      )
+    } else {
+      screen = (
+        <GameScreen key={session.index} item={session.items[session.index]} index={session.index}
+          total={session.items.length} onNext={handleSessionNext} onEnd={handleExitStudy} onWrongWords={handleSessionWrongWords} onCompleted={handleSessionCompleted} />
+      )
+    }
   } else if (view === 'name' && pendingUpload) {
     screen = <NamePrompt fileName={pendingUpload.fileName} count={pendingUpload.result.items.length} onConfirm={handleNameConfirm} onCancel={handleNameCancel} />
   } else if (view === 'list' && currentTemplate) {
-    screen = <SentenceList templateName={currentTemplate.name} items={currentTemplate.items} warnings={currentTemplate.warnings} learned={new Set(learned)} entries={entries} onSelect={handleSelect} onBack={goLibrary} />
+    screen = <SentenceList templateName={currentTemplate.name} items={currentTemplate.items} warnings={currentTemplate.warnings} learned={new Set(learned)} entries={entries} onSelect={handleSelect} onStartStudy={handleStartStudy} onBack={goLibrary} />
   } else if (view === 'wrongbook') {
     screen = <WrongbookScreen entries={entries} stats={stats} onBack={goLibrary} onStartReview={handleStartReview} onPractice={handlePractice} onClear={handleClear} />
   } else if (view === 'review') {

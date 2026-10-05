@@ -49,6 +49,30 @@ export function makeChoices(target: string, sentence: string, count = 4): string
   return shuffle([target, ...pool.slice(0, count - 1)])
 }
 
+/** 短语级点选：正确项 target + 从 pool（同批其它短语英文）抽 count-1 个干扰项，不足用 FALLBACK 补齐。 */
+export function makePhraseChoices(target: string, pool: string[], count = 4): string[] {
+  const seen = new Set<string>([normalize(target)])
+  const distractors: string[] = []
+  for (const p of pool) {
+    const n = normalize(p)
+    if (!seen.has(n)) {
+      seen.add(n)
+      distractors.push(p)
+    }
+  }
+  const result = [target, ...shuffle(distractors)]
+  let i = 0
+  while (result.length < count) {
+    const f = FALLBACK[i++ % FALLBACK.length]
+    const n = normalize(f)
+    if (!seen.has(n)) {
+      seen.add(n)
+      result.push(f)
+    }
+  }
+  return shuffle(result.slice(0, count))
+}
+
 /** Phase 1 仅随机出 choice / flashcard（翻卡 60%）。 */
 export function pickType(rng: () => number = Math.random): QuizType {
   return rng() < 0.6 ? 'flashcard' : 'choice'

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { makeChoices, pickType, xpForAnswer, blankSentence } from './quiz'
+import { makeChoices, makePhraseChoices, pickType, xpForAnswer, blankSentence } from './quiz'
 import { normalize } from './tokenize'
 
 describe('makeChoices', () => {
@@ -14,6 +14,27 @@ describe('makeChoices', () => {
     const choices = makeChoices('go', 'go')
     expect(choices).toHaveLength(4)
     expect(new Set(choices.map(normalize)).size).toBe(4)
+  })
+})
+
+describe('makePhraseChoices', () => {
+  it('includes the target once and draws distractors from the pool', () => {
+    const choices = makePhraseChoices('collect', ['send a letter', 'a cup of tea', 'throw away'])
+    expect(choices).toHaveLength(4)
+    expect(choices.filter((c) => normalize(c) === 'collect')).toHaveLength(1)
+    expect(new Set(choices.map(normalize)).size).toBe(4)
+  })
+
+  it('pads with fallback words when the pool is too small', () => {
+    const choices = makePhraseChoices('go', ['run'])
+    expect(choices).toHaveLength(4)
+    expect(new Set(choices.map(normalize)).size).toBe(4)
+  })
+
+  it('dedupes pool items that normalize to the target', () => {
+    const choices = makePhraseChoices('collect', ['Collect', 'collect', 'run', 'jump'])
+    expect(choices).toHaveLength(4)
+    expect(choices.filter((c) => normalize(c) === 'collect')).toHaveLength(1)
   })
 })
 
