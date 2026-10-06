@@ -1,11 +1,14 @@
+import { formatDuration } from './Timer'
+
 interface Props {
   today: number
   total: number
+  duration?: number
   onClose: () => void
 }
 
-/** 结束学习时的总结弹框：今日学习数 + 平台累计数，激发学习热情。 */
-export default function StudySummary({ today, total, onClose }: Props) {
+/** 结束学习时的总结弹框：今日学习数 + 平台累计数 + 本次用时，激发学习热情。 */
+export default function StudySummary({ today, total, duration, onClose }: Props) {
   return (
     <div className="summary-overlay" role="dialog" aria-modal="true" aria-label="学习总结">
       <div className="summary-modal">
@@ -20,6 +23,12 @@ export default function StudySummary({ today, total, onClose }: Props) {
             <span className="stat-num">{total}</span>
             <span className="stat-label">累计学习</span>
           </div>
+          {duration !== undefined && (
+            <div className="stat">
+              <span className="stat-num">{formatDuration(duration)}</span>
+              <span className="stat-label">本次用时</span>
+            </div>
+          )}
         </div>
 
         <p className="summary-motto">坚持就是胜利，明天继续加油！</p>

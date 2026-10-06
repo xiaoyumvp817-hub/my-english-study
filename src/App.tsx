@@ -42,6 +42,8 @@ function App() {
   const [showSummary, setShowSummary] = useState(false)
   const [learned, setLearned] = useState<string[]>(() => loadLearned())
   const [session, setSession] = useState<StudySession | null>(null)
+  const [sessionStart, setSessionStart] = useState<number | null>(null)
+  const [lastDuration, setLastDuration] = useState<number | null>(null)
 
   useEffect(() => { saveTemplates(templates) }, [templates])
   useEffect(() => { saveEntries(entries) }, [entries])
@@ -71,7 +73,7 @@ function App() {
     setTemplates((prev) => prev.filter((t) => t.id !== id))
     setCurrentTemplate((prev) => (prev && prev.id === id ? null : prev))
   }
-  function handleSelect(index: number) { setCurrentIndex(index); setView('play') }
+  function handleSelect(index: number) { setCurrentIndex(index); setView('play'); setLastDuration(null) }
   function goList() { setCurrentIndex(null); setView('list') }
   function goLibrary() { setCurrentIndex(null); setView('library') }
   function handleSentenceCompleted() {
@@ -124,6 +126,8 @@ function App() {
 
   function handleStartStudy(items: TemplateItem[]) {
     setSession({ items, index: 0, phase: 'select' })
+    setSessionStart(Date.now())
+    setLastDuration(null)
     setView('study')
   }
   function handleSelectWrong(item: TemplateItem) {
@@ -138,6 +142,7 @@ function App() {
   }
   function handleExitStudy() {
     setSession(null)
+    setSessionStart(null)
     goList()
   }
   function handleSessionNext() {
@@ -145,7 +150,9 @@ function App() {
     if (session.index < session.items.length - 1) {
       setSession({ ...session, index: session.index + 1 })
     } else {
+      setLastDuration(sessionStart === null ? null : Date.now() - sessionStart)
       setSession(null)
+      setSessionStart(null)
       goList()
       setShowSummary(true)
     }
@@ -182,6 +189,7 @@ function App() {
           items={session.items}
           index={session.index}
           total={session.items.length}
+          startTime={sessionStart ?? undefined}
           onWrong={handleSelectWrong}
           onNext={handleSelectNext}
           onFinish={handleSelectFinish}
@@ -191,7 +199,7 @@ function App() {
     } else {
       screen = (
         <GameScreen key={session.index} item={session.items[session.index]} index={session.index}
-          total={session.items.length} onNext={handleSessionNext} onEnd={handleExitStudy} onWrongWords={handleSessionWrongWords} onCompleted={handleSessionCompleted} />
+          total={session.items.length} startTime={sessionStart ?? undefined} onNext={handleSessionNext} onEnd={handleExitStudy} onWrongWords={handleSessionWrongWords} onCompleted={handleSessionCompleted} />
       )
     }
   } else if (view === 'name' && pendingUpload) {
@@ -218,6 +226,7 @@ function App() {
         <StudySummary
           today={stats.dailyHistory[dateKey(new Date())] ?? 0}
           total={stats.totalLearned}
+          duration={lastDuration ?? undefined}
           onClose={() => setShowSummary(false)}
         />
       )}

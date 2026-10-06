@@ -3,11 +3,13 @@ import type { TemplateItem } from '../types'
 import { makePhraseChoices } from '../lib/quiz'
 import { isCorrect } from '../lib/tokenize'
 import CoverImage from './CoverImage'
+import Timer from './Timer'
 
 interface Props {
   items: TemplateItem[]
   index: number
   total: number
+  startTime?: number
   onWrong: (item: TemplateItem) => void
   onNext: () => void
   onFinish: () => void
@@ -18,7 +20,7 @@ interface Props {
  * 点选复习：给出中文，从「正确英文 + 干扰项」里点选，必须点对才能进入下一题。
  * 点错的选项标红并禁用，同时把该短语记入错题本。
  */
-export default function SelectionReview({ items, index, total, onWrong, onNext, onFinish, onExit }: Props) {
+export default function SelectionReview({ items, index, total, startTime, onWrong, onNext, onFinish, onExit }: Props) {
   const item = items[index]
   const choices = useMemo(
     () => makePhraseChoices(item.en, items.filter((_, j) => j !== index).map((i) => i.en)),
@@ -41,7 +43,10 @@ export default function SelectionReview({ items, index, total, onWrong, onNext, 
     <div className="game">
       <div className="game-top">
         <button className="ghost" onClick={onExit}>退出</button>
-        <span className="progress">{index + 1} / {total} · 点选</span>
+        <div className="game-top-right">
+          {startTime !== undefined && <Timer startTime={startTime} />}
+          <span className="progress">{index + 1} / {total} · 点选</span>
+        </div>
       </div>
 
       <section className="quiz-card">
