@@ -27,6 +27,10 @@ export default function GameScreen({ item, index, total, startTime, onNext, onEn
         </div>
       </div>
 
+      <div className="progress-bar" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={index + 1} aria-label="学习进度">
+        <div className="progress-fill" style={{ width: `${((index + 1) / total) * 100}%` }} />
+      </div>
+
       <SentenceQuiz
         item={item}
         continueLabel={isLast ? '完成学习' : '下一句 →'}

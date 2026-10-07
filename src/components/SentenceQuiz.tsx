@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import type { TemplateItem } from '../types'
 import { tokenize, wordTokens, isCorrect } from '../lib/tokenize'
@@ -7,6 +7,7 @@ import { nextHint } from '../lib/hints'
 import type { HintLevel, HintState } from '../lib/hints'
 import SentenceDisplay from './SentenceDisplay'
 import CoverImage from './CoverImage'
+import Confetti from './Confetti'
 
 export interface WrongWord {
   word: string
@@ -41,6 +42,7 @@ export default function SentenceQuiz({ item, continueLabel, onComplete, onWrongW
   const [checked, setChecked] = useState(false)
   const [revealed, setRevealed] = useState<boolean[]>(() => words.map(() => false))
   const [hint, setHint] = useState<HintState | null>(null)
+  const [celebrate, setCelebrate] = useState(false)
 
   const wordTexts = useMemo(() => words.map((w) => w.text), [words])
   const nextAction = nextHint(wordTexts, answers, hint)
@@ -108,46 +110,53 @@ export default function SentenceQuiz({ item, continueLabel, onComplete, onWrongW
 
   const allCorrect = checked && results.every(Boolean)
 
+  useEffect(() => {
+    if (allCorrect) setCelebrate(true)
+  }, [allCorrect])
+
   return (
-    <section className="game-card">
-      {item.image && <CoverImage src={item.image} className="item-image" />}
-      <p className="translation">{item.zh || '（无中文释义）'}</p>
+    <>
+      <section className="game-card">
+        {item.image && <CoverImage src={item.image} className="item-image" />}
+        <p className="translation">{item.zh || '（无中文释义）'}</p>
 
-      <button type="button" className="speak" onClick={() => speak(item.en)} title="朗读整句">
-        🔊 朗读整句
-      </button>
+        <button type="button" className="speak" onClick={() => speak(item.en)} title="朗读整句">
+          🔊 朗读整句
+        </button>
 
-      <form onSubmit={handleCheck} noValidate>
-        <SentenceDisplay
-          tokens={tokens}
-          answers={answers}
-          checked={checked}
-          results={results}
-          revealed={revealed}
-          onChange={handleChange}
-        />
+        <form onSubmit={handleCheck} noValidate>
+          <SentenceDisplay
+            tokens={tokens}
+            answers={answers}
+            checked={checked}
+            results={results}
+            revealed={revealed}
+            onChange={handleChange}
+          />
 
-        {allCorrect ? (
-          <p className="result success" role="status">🎉 全对！</p>
-        ) : checked ? (
-          <p className="result fail" role="status">还有填错的单词（标红），修改后再检查一次。</p>
-        ) : null}
-
-        <div className="game-actions">
           {allCorrect ? (
-            <button type="button" className="primary" onClick={onComplete}>
-              {continueLabel}
-            </button>
-          ) : (
-            <>
-              <button type="button" className="ghost" onClick={handleHint} disabled={!nextAction}>
-                {hintLabel}
+            <p className="result success" role="status">🎉 全对！</p>
+          ) : checked ? (
+            <p className="result fail" role="status">还有填错的单词（标红），修改后再检查一次。</p>
+          ) : null}
+
+          <div className="game-actions">
+            {allCorrect ? (
+              <button type="button" className="primary" onClick={onComplete}>
+                {continueLabel}
               </button>
-              <button type="submit" className="primary">检查</button>
-            </>
-          )}
-        </div>
-      </form>
-    </section>
+            ) : (
+              <>
+                <button type="button" className="ghost" onClick={handleHint} disabled={!nextAction}>
+                  {hintLabel}
+                </button>
+                <button type="submit" className="primary">检查</button>
+              </>
+            )}
+          </div>
+        </form>
+      </section>
+      {celebrate && <Confetti onDone={() => setCelebrate(false)} />}
+    </>
   )
 }

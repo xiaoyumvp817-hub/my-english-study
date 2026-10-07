@@ -11,30 +11,41 @@ interface Props {
 export default function Flashcard({ entry, onResult }: Props) {
   const [flipped, setFlipped] = useState(false)
 
-  if (!flipped) {
-    return (
-      <section className="quiz-card">
-        <p className="quiz-prompt">{entry.zh || '（无中文释义）'}</p>
-        <p className="quiz-sentence">{blankSentence(entry.en, entry.word)}</p>
-        <div className="flashcard-face" role="button" tabIndex={0} onClick={() => setFlipped(true)}>
-          <p>先回想这个单词，再点我翻面</p>
-          <span className="flashcard-hint">👆 翻面看答案</span>
-        </div>
-      </section>
-    )
-  }
-
   return (
     <section className="quiz-card">
       <p className="quiz-prompt">{entry.zh || '（无中文释义）'}</p>
+
+      <div className={`flip${flipped ? ' is-flipped' : ''}`}>
+        <div className="flip-inner">
+          <div
+            className="flip-face flip-front"
+            role="button"
+            tabIndex={0}
+            onClick={() => setFlipped(true)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                setFlipped(true)
+              }
+            }}
+          >
+            <p className="quiz-sentence">{blankSentence(entry.en, entry.word)}</p>
+            <span className="flashcard-hint">👆 先回想，再点我翻面</span>
+          </div>
+          <div className="flip-face flip-back">
+            <span className="quiz-word">{entry.word}</span>
+            <p className="quiz-sentence">{entry.en}</p>
+          </div>
+        </div>
+      </div>
+
       <button type="button" className="speak" onClick={() => speak(entry.word)}>🔊 听单词</button>
-      <span className="quiz-word">{entry.word}</span>
-      <p className="quiz-sentence">{entry.en}</p>
+
       <div className="rate-actions">
-        <button className="ghost" onClick={() => onResult(2)}>忘记</button>
-        <button className="ghost" onClick={() => onResult(3)}>模糊</button>
-        <button className="ghost" onClick={() => onResult(4)}>记得</button>
-        <button className="ghost" onClick={() => onResult(5)}>轻松</button>
+        <button className="ghost" disabled={!flipped} onClick={() => onResult(2)}>忘记</button>
+        <button className="ghost" disabled={!flipped} onClick={() => onResult(3)}>模糊</button>
+        <button className="ghost" disabled={!flipped} onClick={() => onResult(4)}>记得</button>
+        <button className="ghost" disabled={!flipped} onClick={() => onResult(5)}>轻松</button>
       </div>
     </section>
   )

@@ -49,6 +49,10 @@ export default function SelectionReview({ items, index, total, startTime, onWron
         </div>
       </div>
 
+      <div className="progress-bar" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={index + 1} aria-label="复习进度">
+        <div className="progress-fill" style={{ width: `${((index + 1) / total) * 100}%` }} />
+      </div>
+
       <section className="quiz-card">
         {item.image && <CoverImage src={item.image} className="item-image" />}
         <p className="quiz-prompt">{item.zh || '（无中文释义）'}</p>

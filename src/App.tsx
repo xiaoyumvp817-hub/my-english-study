@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ParseResult, TemplateItem } from './types'
 import TemplateLibrary from './components/TemplateLibrary'
 import NamePrompt from './components/NamePrompt'
@@ -8,12 +8,14 @@ import GameScreen from './components/GameScreen'
 import WrongbookScreen from './components/WrongbookScreen'
 import ReviewSession from './components/ReviewSession'
 import StudySummary from './components/StudySummary'
+import Confetti from './components/Confetti'
+import AmbientBackground from './components/AmbientBackground'
 import type { WrongWord } from './components/SentenceQuiz'
 import { loadTemplates, saveTemplates, makeTemplate } from './lib/templates'
 import type { Template, TemplateSort } from './lib/templates'
 import { loadEntries, saveEntries, recordWrong, reviewEntry, dueEntries } from './lib/wrongbook'
 import type { WrongEntry } from './lib/wrongbook'
-import { loadStats, saveStats, recordStudy, applyReviewAnswer, dateKey } from './lib/stats'
+import { loadStats, saveStats, recordStudy, applyReviewAnswer, dateKey, levelForXp } from './lib/stats'
 import type { Stats } from './lib/stats'
 import { loadLearned, saveLearned, commitLearned } from './lib/learned'
 import type { QuizType } from './lib/quiz'
@@ -44,11 +46,21 @@ function App() {
   const [session, setSession] = useState<StudySession | null>(null)
   const [sessionStart, setSessionStart] = useState<number | null>(null)
   const [lastDuration, setLastDuration] = useState<number | null>(null)
+  const [levelUp, setLevelUp] = useState(false)
+  const prevLevelRef = useRef(levelForXp(stats.xp))
 
   useEffect(() => { saveTemplates(templates) }, [templates])
   useEffect(() => { saveEntries(entries) }, [entries])
   useEffect(() => { saveStats(stats) }, [stats])
   useEffect(() => { saveLearned(learned) }, [learned])
+
+  useEffect(() => {
+    const level = levelForXp(stats.xp)
+    if (level > prevLevelRef.current) {
+      prevLevelRef.current = level
+      setLevelUp(true)
+    }
+  }, [stats.xp])
 
   function handleParsed(result: ParseResult, fileName: string) {
     setPendingUpload({ result, fileName })
@@ -218,19 +230,23 @@ function App() {
   }
 
   return (
-    <div className="app">
-      <div className="screen" key={view}>
-        {screen}
+    <>
+      <AmbientBackground />
+      <div className="app">
+        <div className="screen" key={view}>
+          {screen}
+        </div>
+        {showSummary && (
+          <StudySummary
+            today={stats.dailyHistory[dateKey(new Date())] ?? 0}
+            total={stats.totalLearned}
+            duration={lastDuration ?? undefined}
+            onClose={() => setShowSummary(false)}
+          />
+        )}
       </div>
-      {showSummary && (
-        <StudySummary
-          today={stats.dailyHistory[dateKey(new Date())] ?? 0}
-          total={stats.totalLearned}
-          duration={lastDuration ?? undefined}
-          onClose={() => setShowSummary(false)}
-        />
-      )}
-    </div>
+      {levelUp && <Confetti big count={80} onDone={() => setLevelUp(false)} />}
+    </>
   )
 }
 

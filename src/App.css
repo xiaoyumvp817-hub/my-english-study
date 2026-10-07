@@ -1,4 +1,6 @@
 .app {
+  position: relative;
+  z-index: 1;
   max-width: 720px;
   margin: 0 auto;
   padding: 40px 20px 72px;
@@ -879,22 +881,45 @@
 
 .quiz-actions { display: flex; flex-direction: column; gap: 12px; align-items: center; }
 
-.flashcard-face {
+.flip {
+  perspective: 1200px;
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+
+.flip-inner {
+  display: grid;
+  width: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.5s var(--ease-spring);
+}
+
+.flip.is-flipped .flip-inner { transform: rotateY(180deg); }
+
+.flip-face {
+  grid-area: 1 / 1;
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px 16px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
   background: var(--bg);
   border: 2px dashed var(--line);
   border-radius: 14px;
-  padding: 28px 16px;
-  cursor: pointer;
   color: var(--muted);
-  transition: border-color 0.2s, transform 0.12s ease;
 }
 
-.flashcard-face:hover {
-  border-color: var(--accent);
-  transform: scale(1.01);
+.flip-face p { margin: 0; }
+
+.flip-back {
+  transform: rotateY(180deg);
+  color: var(--ink);
 }
 
-.flashcard-face:active { transform: scale(0.99); }
 .flashcard-hint { font-size: 0.85rem; }
 
 .rate-actions {
@@ -1039,4 +1064,178 @@
   .summary-modal {
     animation: none;
   }
+}
+
+/* ---------- Effects: celebration · feedback · ambient ---------- */
+
+/* Confetti */
+.confetti {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 200;
+  overflow: hidden;
+}
+
+.confetti-piece {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  line-height: 1;
+  animation: confetti-fall 1.6s ease-out forwards;
+  animation-delay: var(--delay, 0s);
+  will-change: transform, opacity;
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translate(-50%, -50%) translate(0, 0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) translate(var(--dx, 0), var(--dy, 0)) rotate(var(--rot, 0deg));
+    opacity: 0;
+  }
+}
+
+/* Answer feedback: shake (wrong) · pop (correct) */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+
+@keyframes pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.14); }
+  100% { transform: scale(1); }
+}
+
+.word-input.is-wrong,
+.quiz-option.is-wrong {
+  animation: shake 0.4s ease;
+}
+
+.word-input.is-correct,
+.quiz-option.is-correct {
+  animation: pop 0.35s var(--ease-spring);
+}
+
+/* Animated progress bar */
+.progress-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+  margin: -8px 0 20px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 999px;
+  transition: width 0.4s var(--ease-spring);
+}
+
+/* Ambient background */
+.ambient {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.grain-overlay {
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.04;
+}
+
+.float-shape {
+  position: absolute;
+  bottom: -48px;
+  line-height: 1;
+  opacity: 0;
+  animation: float-up 20s linear infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes float-up {
+  0% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0; }
+  10% { opacity: 0.5; }
+  50% { transform: translateY(-45vh) translateX(24px) rotate(180deg); }
+  90% { opacity: 0.5; }
+  100% { transform: translateY(-92vh) translateX(-12px) rotate(360deg); opacity: 0; }
+}
+
+/* Streak flame + level glow */
+.streak {
+  display: inline-block;
+  animation: flame-pulse 1.6s ease-in-out infinite;
+  transform-origin: left center;
+}
+
+@keyframes flame-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+
+.level.liquid-glass {
+  animation: level-glow 2.4s ease-in-out infinite;
+}
+
+@keyframes level-glow {
+  0%, 100% { box-shadow: 0 0 0 oklch(0.78 0.12 78 / 0); }
+  50% { box-shadow: 0 0 12px oklch(0.78 0.12 78 / 0.5); }
+}
+
+/* Card shine sweep (hover highlight) */
+.game-card,
+.quiz-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.game-card::after,
+.quiz-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -80%;
+  width: 55%;
+  height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.16), transparent);
+  transform: skewX(-20deg);
+  pointer-events: none;
+}
+
+.game-card:hover::after,
+.quiz-card:hover::after {
+  animation: shine-sweep 0.9s ease;
+}
+
+@keyframes shine-sweep {
+  from { left: -80%; }
+  to { left: 130%; }
+}
+
+/* Reduced motion: disable all new effects */
+@media (prefers-reduced-motion: reduce) {
+  .confetti { display: none; }
+  .word-input.is-wrong,
+  .quiz-option.is-wrong,
+  .word-input.is-correct,
+  .quiz-option.is-correct { animation: none; }
+  .flip-inner { transition: none; }
+  .float-shape { animation: none; opacity: 0; }
+  .streak { animation: none; }
+  .level.liquid-glass { animation: none; }
+  .game-card::after,
+  .quiz-card::after { animation: none; }
+  .progress-fill { transition: none; }
 }
