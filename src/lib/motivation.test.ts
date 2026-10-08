@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { emptyMotivation, loadMotivation, saveMotivation, goalStreak, makeupTarget, templateCompleted, completedUnitCount, ACHIEVEMENTS, unlockedAchievements, unseenAchievements } from './motivation'
+import { emptyMotivation, loadMotivation, saveMotivation, goalStreak, makeupTarget, templateCompleted, completedUnitCount, ACHIEVEMENTS, unlockedAchievements, unseenAchievements, awardMakeupCards, useMakeupCard } from './motivation'
 import type { Template } from './templates'
 import type { Stats } from './stats'
-import { emptyStats, dateKey } from './stats'
+import { emptyStats, dateKey, backfillDay } from './stats'
 
 afterEach(() => { vi.unstubAllGlobals() })
 
@@ -179,5 +179,60 @@ describe('ACHIEVEMENTS', () => {
       'clear-wrongs', 'collector-10', 'collector-3', 'first-step', 'five-hundred',
       'hundred-words', 'level-5', 'streak-30', 'streak-7', 'ten-words',
     ])
+  })
+})
+
+describe('awardMakeupCards', () => {
+  const goal = 5
+  function history(days: number, today = '2026-10-08'): Record<string, number> {
+    const h: Record<string, number> = {}
+    for (let i = 0; i < days; i++) {
+      const d = new Date(`${today}T00:00:00`)
+      d.setDate(d.getDate() - i)
+      h[dateKey(d)] = goal
+    }
+    return h
+  }
+
+  it('awards one card at a 7-day streak', () => {
+    const m = awardMakeupCards(emptyMotivation(), history(7), goal, '2026-10-08')
+    expect(m.makeupCards).toBe(1)
+    expect(m.awardedMilestones).toBe(1)
+  })
+
+  it('does not re-award below the high-water mark', () => {
+    const m0 = awardMakeupCards(emptyMotivation(), history(7), goal, '2026-10-08')
+    const m1 = awardMakeupCards(m0, history(7), goal, '2026-10-08')
+    expect(m1.makeupCards).toBe(1)
+  })
+
+  it('awards two cards at a 14-day streak', () => {
+    const m = awardMakeupCards(emptyMotivation(), history(14), goal, '2026-10-08')
+    expect(m.makeupCards).toBe(2)
+    expect(m.awardedMilestones).toBe(2)
+  })
+})
+
+describe('useMakeupCard', () => {
+  const goal = 5
+
+  it('returns null with no cards', () => {
+    expect(useMakeupCard(emptyMotivation(), {}, goal, '2026-10-08')).toBeNull()
+  })
+
+  it('returns the gap day and decrements cards', () => {
+    const m = { ...emptyMotivation(), makeupCards: 2 }
+    const h = { '2026-10-08': 5, '2026-10-07': 1 }
+    const r = useMakeupCard(m, h, goal, '2026-10-08')
+    expect(r).not.toBeNull()
+    expect(r!.day).toBe('2026-10-07')
+    expect(r!.motivation.makeupCards).toBe(1)
+  })
+
+  it('backfillDay marks the day met and recovers the streak', () => {
+    const s = backfillDay(emptyStats(), '2026-10-07', 5)
+    expect(s.dailyHistory['2026-10-07']).toBe(5)
+    const h = { '2026-10-08': 5, ...s.dailyHistory }
+    expect(goalStreak(h, goal, '2026-10-08')).toBe(2)
   })
 })

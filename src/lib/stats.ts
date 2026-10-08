@@ -54,6 +54,11 @@ export function applyReviewAnswer(stats: Stats, xp: number, correct: boolean, to
   return recordStudy(addXp(stats, xp), today, correct ? 1 : 0)
 }
 
+/** 补签卡回填：把某一天直接记为达标（dailyHistory[day] = count）。 */
+export function backfillDay(stats: Stats, day: string, count: number): Stats {
+  return { ...stats, dailyHistory: { ...stats.dailyHistory, [day]: count } }
+}
+
 const STORAGE_KEY = 'stats:v1'
 
 export function loadStats(): Stats {

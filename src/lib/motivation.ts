@@ -134,3 +134,27 @@ export function unseenAchievements(unlocked: string[], seen: string[]): string[]
   const seenSet = new Set(seen)
   return unlocked.filter((id) => !seenSet.has(id))
 }
+
+export function awardMakeupCards(
+  m: Motivation,
+  dailyHistory: Record<string, number>,
+  goal: number,
+  today: string,
+): Motivation {
+  const milestone = Math.floor(goalStreak(dailyHistory, goal, today) / 7)
+  if (milestone <= m.awardedMilestones) return m
+  const gained = milestone - m.awardedMilestones
+  return { ...m, makeupCards: m.makeupCards + gained, awardedMilestones: milestone }
+}
+
+export function useMakeupCard(
+  m: Motivation,
+  dailyHistory: Record<string, number>,
+  goal: number,
+  today: string,
+): { motivation: Motivation; day: string } | null {
+  if (m.makeupCards <= 0) return null
+  const day = makeupTarget(dailyHistory, goal, today)
+  if (!day) return null
+  return { motivation: { ...m, makeupCards: m.makeupCards - 1 }, day }
+}
