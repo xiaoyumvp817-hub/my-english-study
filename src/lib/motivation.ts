@@ -1,0 +1,38 @@
+export interface Motivation {
+  goalPerDay: number
+  makeupCards: number
+  awardedMilestones: number
+  seenAchievements: string[]
+}
+
+export function emptyMotivation(): Motivation {
+  return { goalPerDay: 5, makeupCards: 0, awardedMilestones: 0, seenAchievements: [] }
+}
+
+const STORAGE_KEY = 'motivation:v1'
+
+export function loadMotivation(): Motivation {
+  if (typeof window === 'undefined') return emptyMotivation()
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY)
+    if (!raw) return emptyMotivation()
+    const p = JSON.parse(raw) as Partial<Motivation>
+    return {
+      goalPerDay: typeof p.goalPerDay === 'number' ? p.goalPerDay : 5,
+      makeupCards: typeof p.makeupCards === 'number' ? p.makeupCards : 0,
+      awardedMilestones: typeof p.awardedMilestones === 'number' ? p.awardedMilestones : 0,
+      seenAchievements: Array.isArray(p.seenAchievements) ? p.seenAchievements : [],
+    }
+  } catch {
+    return emptyMotivation()
+  }
+}
+
+export function saveMotivation(m: Motivation): void {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(m))
+  } catch {
+    // storage unavailable — non-fatal
+  }
+}
