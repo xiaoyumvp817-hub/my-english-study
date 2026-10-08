@@ -7,13 +7,14 @@ import StreakBar from './StreakBar'
 interface Props {
   entries: WrongEntry[]
   stats: Stats
+  streak: number
   onBack: () => void
   onStartReview: () => void
   onPractice: (entry: WrongEntry) => void
   onClear: () => void
 }
 
-export default function WrongbookScreen({ entries, stats, onBack, onStartReview, onPractice, onClear }: Props) {
+export default function WrongbookScreen({ entries, stats, streak, onBack, onStartReview, onPractice, onClear }: Props) {
   const [tab, setTab] = useState<'review' | 'words'>('review')
   const now = Date.now()
   const due = dueEntries(entries, now)
@@ -32,7 +33,7 @@ export default function WrongbookScreen({ entries, stats, onBack, onStartReview,
       <header className="list-head">
         <div>
           <h1 className="title">📒 错题本</h1>
-          <StreakBar stats={stats} />
+          <StreakBar stats={stats} streak={streak} />
         </div>
         <button className="ghost" onClick={onBack}>← 返回</button>
       </header>

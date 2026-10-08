@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ParseResult, TemplateItem } from './types'
 import TemplateLibrary from './components/TemplateLibrary'
 import NamePrompt from './components/NamePrompt'
@@ -10,19 +10,23 @@ import ReviewSession from './components/ReviewSession'
 import StudySummary from './components/StudySummary'
 import Confetti from './components/Confetti'
 import AmbientBackground from './components/AmbientBackground'
+import TodayCard from './components/TodayCard'
+import AchievementsScreen from './components/AchievementsScreen'
 import type { WrongWord } from './components/SentenceQuiz'
 import { loadTemplates, saveTemplates, makeTemplate } from './lib/templates'
 import type { Template, TemplateSort } from './lib/templates'
 import { loadEntries, saveEntries, recordWrong, reviewEntry, dueEntries } from './lib/wrongbook'
 import type { WrongEntry } from './lib/wrongbook'
-import { loadStats, saveStats, recordStudy, applyReviewAnswer, dateKey, levelForXp } from './lib/stats'
+import { loadStats, saveStats, recordStudy, applyReviewAnswer, dateKey, levelForXp, backfillDay } from './lib/stats'
 import type { Stats } from './lib/stats'
+import { loadMotivation, saveMotivation, awardMakeupCards, useMakeupCard, goalStreak, completedUnitCount, unlockedAchievements, unseenAchievements, ACHIEVEMENTS } from './lib/motivation'
+import type { Motivation } from './lib/motivation'
 import { loadLearned, saveLearned, commitLearned } from './lib/learned'
 import type { QuizType } from './lib/quiz'
 import { xpForAnswer } from './lib/quiz'
 import './App.css'
 
-type View = 'library' | 'name' | 'list' | 'play' | 'wrongbook' | 'review' | 'study'
+type View = 'library' | 'name' | 'list' | 'play' | 'wrongbook' | 'review' | 'study' | 'achievements'
 
 type StudyPhase = 'select' | 'type'
 interface StudySession {
@@ -48,11 +52,14 @@ function App() {
   const [lastDuration, setLastDuration] = useState<number | null>(null)
   const [levelUp, setLevelUp] = useState(false)
   const prevLevelRef = useRef(levelForXp(stats.xp))
+  const [motivation, setMotivation] = useState<Motivation>(() => loadMotivation())
+  const [newAch, setNewAch] = useState<string[]>([])
 
   useEffect(() => { saveTemplates(templates) }, [templates])
   useEffect(() => { saveEntries(entries) }, [entries])
   useEffect(() => { saveStats(stats) }, [stats])
   useEffect(() => { saveLearned(learned) }, [learned])
+  useEffect(() => { saveMotivation(motivation) }, [motivation])
 
   useEffect(() => {
     const level = levelForXp(stats.xp)
@@ -61,6 +68,24 @@ function App() {
       setLevelUp(true)
     }
   }, [stats.xp])
+
+  const today = dateKey(new Date())
+  const learnedSet = useMemo(() => new Set(learned), [learned])
+  const streak = goalStreak(stats.dailyHistory, motivation.goalPerDay, today)
+  const completedUnits = completedUnitCount(templates, learnedSet)
+  const unlocked = useMemo(
+    () => unlockedAchievements({ stats, learned: learnedSet, templates, entries, goal: motivation.goalPerDay, today }),
+    [stats, learnedSet, templates, entries, motivation.goalPerDay, today],
+  )
+
+  useEffect(() => {
+    setMotivation((m) => awardMakeupCards(m, stats.dailyHistory, motivation.goalPerDay, today))
+  }, [stats, motivation.goalPerDay, today])
+
+  useEffect(() => {
+    const fresh = unseenAchievements(unlocked, motivation.seenAchievements)
+    if (fresh.length > 0) setNewAch((prev) => [...new Set([...prev, ...fresh])])
+  }, [unlocked, motivation.seenAchievements])
 
   function handleParsed(result: ParseResult, fileName: string) {
     setPendingUpload({ result, fileName })
@@ -135,6 +160,20 @@ function App() {
     return xp
   }
   function handleClear() { setEntries([]) }
+
+  function handleSetGoal(goal: number) {
+    setMotivation((m) => ({ ...m, goalPerDay: goal }))
+  }
+  function handleUseMakeup() {
+    const res = useMakeupCard(motivation, stats.dailyHistory, motivation.goalPerDay, today)
+    if (!res) return
+    setMotivation(res.motivation)
+    setStats((prev) => backfillDay(prev, res.day, motivation.goalPerDay))
+  }
+  function handleMarkSeen(ids: string[]) {
+    setMotivation((m) => ({ ...m, seenAchievements: [...m.seenAchievements, ...ids] }))
+    setNewAch([])
+  }
 
   function handleStartStudy(items: TemplateItem[]) {
     setSession({ items, index: 0, phase: 'select' })
@@ -219,13 +258,37 @@ function App() {
   } else if (view === 'list' && currentTemplate) {
     screen = <SentenceList templateName={currentTemplate.name} items={currentTemplate.items} warnings={currentTemplate.warnings} learned={new Set(learned)} entries={entries} onSelect={handleSelect} onStartStudy={handleStartStudy} onBack={goLibrary} />
   } else if (view === 'wrongbook') {
-    screen = <WrongbookScreen entries={entries} stats={stats} onBack={goLibrary} onStartReview={handleStartReview} onPractice={handlePractice} onClear={handleClear} />
+    screen = <WrongbookScreen entries={entries} stats={stats} streak={streak} onBack={goLibrary} onStartReview={handleStartReview} onPractice={handlePractice} onClear={handleClear} />
   } else if (view === 'review') {
     screen = <ReviewSession entries={reviewEntries} onAnswer={handleAnswer} onBack={() => setView('wrongbook')} />
+  } else if (view === 'achievements') {
+    screen = (
+      <AchievementsScreen
+        stats={stats}
+        motivation={motivation}
+        templates={templates}
+        learned={learnedSet}
+        entries={entries}
+        onBack={goLibrary}
+        onSetGoal={handleSetGoal}
+        onUseMakeup={handleUseMakeup}
+      />
+    )
   } else {
     screen = (
-      <TemplateLibrary templates={templates} sort={sort} onSortChange={setSort} onParsed={handleParsed}
-        onOpenTemplate={handleOpenTemplate} onRename={handleRename} onDelete={handleDelete} onOpenWrongbook={() => setView('wrongbook')} />
+      <>
+        <TodayCard
+          todayCount={stats.dailyHistory[today] ?? 0}
+          goal={motivation.goalPerDay}
+          streak={streak}
+          completedUnits={completedUnits}
+          totalUnits={templates.length}
+          makeupCards={motivation.makeupCards}
+          onOpen={() => setView('achievements')}
+        />
+        <TemplateLibrary templates={templates} sort={sort} onSortChange={setSort} onParsed={handleParsed}
+          onOpenTemplate={handleOpenTemplate} onRename={handleRename} onDelete={handleDelete} onOpenWrongbook={() => setView('wrongbook')} />
+      </>
     )
   }
 
@@ -246,6 +309,21 @@ function App() {
         )}
       </div>
       {levelUp && <Confetti big count={80} onDone={() => setLevelUp(false)} />}
+      {newAch.length > 0 && (
+        <div className="ach-toast" role="status">
+          <Confetti />
+          <div className="ach-toast-card">
+            <h3>🎉 新成就解锁！</h3>
+            <ul>
+              {newAch.map((id) => {
+                const a = ACHIEVEMENTS.find((x) => x.id === id)
+                return a ? <li key={id}>{a.emoji} {a.name}</li> : null
+              })}
+            </ul>
+            <button className="primary" onClick={() => handleMarkSeen(newAch)}>知道了</button>
+          </div>
+        </div>
+      )}
     </>
   )
 }
