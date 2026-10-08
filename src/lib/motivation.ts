@@ -1,4 +1,6 @@
 import { dateKey } from './stats'
+import type { Template } from './templates'
+import { normalize } from './tokenize'
 
 export interface Motivation {
   goalPerDay: number
@@ -64,4 +66,12 @@ export function makeupTarget(dailyHistory: Record<string, number>, goal: number,
     day = yesterdayOf(day)
   }
   return null
+}
+
+export function templateCompleted(template: Template, learned: ReadonlySet<string>): boolean {
+  return template.items.every((it) => learned.has(normalize(it.en)))
+}
+
+export function completedUnitCount(templates: Template[], learned: ReadonlySet<string>): number {
+  return templates.filter((t) => templateCompleted(t, learned)).length
 }

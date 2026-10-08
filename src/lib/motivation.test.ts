@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { emptyMotivation, loadMotivation, saveMotivation, goalStreak, makeupTarget } from './motivation'
+import { emptyMotivation, loadMotivation, saveMotivation, goalStreak, makeupTarget, templateCompleted, completedUnitCount } from './motivation'
+import type { Template } from './templates'
 
 afterEach(() => { vi.unstubAllGlobals() })
+
+function tpl(items: string[]): Template {
+  return { id: 't', name: 'u', createdAt: 0, items: items.map((en) => ({ id: en, en, zh: '' })), warnings: [] }
+}
 
 describe('motivation persistence', () => {
   it('emptyMotivation returns defaults', () => {
@@ -79,5 +84,33 @@ describe('makeupTarget', () => {
   it('returns the most recent unmet day before today', () => {
     const h = { '2026-10-05': 5, '2026-10-06': 1, '2026-10-07': 5, '2026-10-08': 5 }
     expect(makeupTarget(h, goal, '2026-10-08')).toBe('2026-10-06')
+  })
+})
+
+describe('templateCompleted', () => {
+  it('is true when every item is learned', () => {
+    const t = tpl(['Hello world', 'Good morning'])
+    expect(templateCompleted(t, new Set(['hello world', 'good morning']))).toBe(true)
+  })
+
+  it('is false when any item is missing', () => {
+    const t = tpl(['Hello world', 'Good morning'])
+    expect(templateCompleted(t, new Set(['hello world']))).toBe(false)
+  })
+
+  it('normalizes case and whitespace', () => {
+    const t = tpl(['  Hello   World '])
+    expect(templateCompleted(t, new Set(['hello world']))).toBe(true)
+  })
+})
+
+describe('completedUnitCount', () => {
+  it('counts completed templates', () => {
+    const learned = new Set(['one'])
+    expect(completedUnitCount([tpl(['One']), tpl(['Two'])], learned)).toBe(1)
+  })
+
+  it('returns 0 for an empty template list', () => {
+    expect(completedUnitCount([], new Set(['one']))).toBe(0)
   })
 })
