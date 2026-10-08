@@ -1,3 +1,5 @@
+import { dateKey } from './stats'
+
 export interface Motivation {
   goalPerDay: number
   makeupCards: number
@@ -35,4 +37,31 @@ export function saveMotivation(m: Motivation): void {
   } catch {
     // storage unavailable — non-fatal
   }
+}
+
+function yesterdayOf(day: string): string {
+  const d = new Date(`${day}T00:00:00`)
+  d.setDate(d.getDate() - 1)
+  return dateKey(d)
+}
+
+export function goalStreak(dailyHistory: Record<string, number>, goal: number, today: string): number {
+  let day = today
+  if ((dailyHistory[day] ?? 0) < goal) day = yesterdayOf(day)
+  let streak = 0
+  while ((dailyHistory[day] ?? 0) >= goal) {
+    streak++
+    day = yesterdayOf(day)
+  }
+  return streak
+}
+
+export function makeupTarget(dailyHistory: Record<string, number>, goal: number, today: string): string | null {
+  if (goalStreak(dailyHistory, goal, today) === 0) return null
+  let day = yesterdayOf(today)
+  for (let i = 0; i < 365; i++) {
+    if ((dailyHistory[day] ?? 0) < goal) return day
+    day = yesterdayOf(day)
+  }
+  return null
 }

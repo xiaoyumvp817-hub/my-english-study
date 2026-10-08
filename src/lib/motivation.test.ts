@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { emptyMotivation, loadMotivation, saveMotivation } from './motivation'
+import { emptyMotivation, loadMotivation, saveMotivation, goalStreak, makeupTarget } from './motivation'
 
 afterEach(() => { vi.unstubAllGlobals() })
 
@@ -32,5 +32,52 @@ describe('motivation persistence', () => {
     vi.stubGlobal('window', { localStorage: { setItem } })
     saveMotivation(emptyMotivation())
     expect(setItem).toHaveBeenCalledWith('motivation:v1', JSON.stringify(emptyMotivation()))
+  })
+})
+
+describe('goalStreak', () => {
+  const goal = 5
+
+  it('returns 0 for empty history', () => {
+    expect(goalStreak({}, goal, '2026-10-08')).toBe(0)
+  })
+
+  it('counts consecutive met days ending today', () => {
+    const h = { '2026-10-06': 5, '2026-10-07': 5, '2026-10-08': 5 }
+    expect(goalStreak(h, goal, '2026-10-08')).toBe(3)
+  })
+
+  it('anchors from yesterday when today is below goal', () => {
+    const h = { '2026-10-07': 5, '2026-10-08': 3 }
+    expect(goalStreak(h, goal, '2026-10-08')).toBe(1)
+  })
+
+  it('stops at the first unmet day', () => {
+    const h = { '2026-10-06': 4, '2026-10-07': 5, '2026-10-08': 5 }
+    expect(goalStreak(h, goal, '2026-10-08')).toBe(2)
+  })
+
+  it('crosses month boundaries correctly', () => {
+    const h = { '2026-09-30': 5, '2026-10-01': 5, '2026-10-02': 5 }
+    expect(goalStreak(h, goal, '2026-10-02')).toBe(3)
+  })
+})
+
+describe('makeupTarget', () => {
+  const goal = 5
+
+  it('returns null when streak is zero (nothing to protect)', () => {
+    expect(makeupTarget({}, goal, '2026-10-08')).toBeNull()
+    expect(makeupTarget({ '2026-10-05': 5 }, goal, '2026-10-08')).toBeNull()
+  })
+
+  it('returns yesterday when yesterday is unmet', () => {
+    const h = { '2026-10-07': 2, '2026-10-08': 5 }
+    expect(makeupTarget(h, goal, '2026-10-08')).toBe('2026-10-07')
+  })
+
+  it('returns the most recent unmet day before today', () => {
+    const h = { '2026-10-05': 5, '2026-10-06': 1, '2026-10-07': 5, '2026-10-08': 5 }
+    expect(makeupTarget(h, goal, '2026-10-08')).toBe('2026-10-06')
   })
 })
