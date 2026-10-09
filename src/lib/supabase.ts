@@ -7,7 +7,7 @@ import type { Stats } from './stats'
 import { emptyMotivation } from './motivation'
 import type { Motivation } from './motivation'
 import type { Challenge } from './challenge'
-import { generateUniqueFriendCode } from './friendCode'
+import { generateUniqueFriendCode, assertNotSelf, normalizeFriendCode } from './friendCode'
 
 // ===== 行类型（与 supabase/schema.sql 列一一对应） =====
 export interface TemplatesRow {
@@ -153,6 +153,30 @@ export function displayNameFromEmail(email: string): string {
   return at === -1 ? email : email.slice(0, at)
 }
 
+// ===== challenge / friendship 行映射 =====
+export function challengeToRow(c: Challenge): ChallengeRow {
+  return {
+    id: c.id, challenger_id: c.challengerId, challengee_id: c.challengeeId,
+    words: c.words, challenger_score: c.challengerScore, challenger_duration_ms: c.challengerDurationMs,
+    challengee_score: c.challengeeScore, challengee_duration_ms: c.challengeeDurationMs,
+    status: c.status, created_at: new Date(c.createdAt).toISOString(), completed_at: c.completedAt ? new Date(c.completedAt).toISOString() : null,
+  }
+}
+export function challengeFromRow(r: ChallengeRow): Challenge {
+  return {
+    id: r.id, challengerId: r.challenger_id, challengeeId: r.challengee_id,
+    words: asArray<Challenge['words'][number]>(r.words, []),
+    challengerScore: r.challenger_score, challengerDurationMs: r.challenger_duration_ms,
+    challengeeScore: r.challengee_score, challengeeDurationMs: r.challengee_duration_ms,
+    status: r.status === 'completed' ? 'completed' : 'pending',
+    createdAt: new Date(r.created_at).getTime(), completedAt: r.completed_at ? new Date(r.completed_at).getTime() : null,
+  }
+}
+
+export function friendshipOtherId(me: string, r: FriendshipRow): string {
+  return r.user_a === me ? r.user_b : r.user_a
+}
+
 // ===== CloudApi 接口（Task 5/6/9 实现，签名在此锁定） =====
 export interface CloudApi {
   signUp(email: string, password: string): Promise<string>
@@ -259,14 +283,50 @@ export function createCloudApi(client: SupabaseClient): CloudApi {
       if (error) throw error
       return { userId, displayName, friendCode: code, totalLearned: 0 }
     },
-    async getProfileByCode(_code: string) { throw new Error('Task 9 实现 getProfileByCode') },
-    async addFriendship(_userId: string, _friendId: string) { throw new Error('Task 9 实现 addFriendship') },
-    async listFriendIds(_userId: string) { throw new Error('Task 9 实现 listFriendIds') },
-    async listProfiles(_userIds: string[]) { throw new Error('Task 9 实现 listProfiles') },
-    async getMyProfile(_userId: string) { throw new Error('Task 9 实现 getMyProfile') },
-    async createChallenge(_challenge: Challenge) { throw new Error('Task 9 实现 createChallenge') },
-    async listChallengesFor(_userId: string) { throw new Error('Task 9 实现 listChallengesFor') },
-    async setChallengeResult(_challengeId: string, _score: number, _durationMs: number) { throw new Error('Task 9 实现 setChallengeResult') },
-    async globalLeaderboard(_limit: number) { throw new Error('Task 9 实现 globalLeaderboard') },
+    async getProfileByCode(code) {
+      const { data, error } = await client.from('profiles').select('*').eq('friend_code', normalizeFriendCode(code)).maybeSingle()
+      if (error) throw error
+      return data ? profileRowToProfile(data as ProfileRow) : null
+    },
+    async addFriendship(userId, friendId) {
+      assertNotSelf(userId, friendId)
+      const [a, b] = userId < friendId ? [userId, friendId] : [friendId, userId]
+      const { error } = await client.from('friendships').insert({ user_a: a, user_b: b })
+      if (error) throw error
+    },
+    async listFriendIds(userId) {
+      const { data, error } = await client.from('friendships').select('*').or(`user_a.eq.${userId},user_b.eq.${userId}`)
+      if (error) throw error
+      return ((data ?? []) as FriendshipRow[]).map((r) => friendshipOtherId(userId, r))
+    },
+    async listProfiles(userIds) {
+      if (userIds.length === 0) return []
+      const { data, error } = await client.from('profiles').select('*').in('user_id', userIds)
+      if (error) throw error
+      return ((data ?? []) as ProfileRow[]).map(profileRowToProfile)
+    },
+    async getMyProfile(userId) {
+      const { data, error } = await client.from('profiles').select('*').eq('user_id', userId).maybeSingle()
+      if (error) throw error
+      return data ? profileRowToProfile(data as ProfileRow) : null
+    },
+    async createChallenge(challenge) {
+      const { error } = await client.from('challenges').insert(challengeToRow(challenge))
+      if (error) throw error
+    },
+    async listChallengesFor(userId) {
+      const { data, error } = await client.from('challenges').select('*').or(`challenger_id.eq.${userId},challengee_id.eq.${userId}`).order('created_at', { ascending: false })
+      if (error) throw error
+      return ((data ?? []) as ChallengeRow[]).map(challengeFromRow)
+    },
+    async setChallengeResult(challengeId, score, durationMs) {
+      const { error } = await client.from('challenges').update({ challengee_score: score, challengee_duration_ms: durationMs, status: 'completed', completed_at: new Date().toISOString() }).eq('id', challengeId)
+      if (error) throw error
+    },
+    async globalLeaderboard(limit) {
+      const { data, error } = await client.from('profiles').select('user_id, display_name, friend_code, total_learned').order('total_learned', { ascending: false }).limit(limit)
+      if (error) throw error
+      return ((data ?? []) as ProfileRow[]).map(profileRowToProfile)
+    },
   }
 }
