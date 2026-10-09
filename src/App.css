@@ -1662,3 +1662,26 @@
   flex-direction: column;
   gap: 14px;
 }
+
+.list-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.challenge-error {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.challenge-error .result {
+  margin: 0;
+  flex: 1;
+  text-align: left;
+}

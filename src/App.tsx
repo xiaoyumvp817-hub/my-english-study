@@ -28,12 +28,15 @@ import { createSupabaseClient, createCloudApi } from './lib/supabase'
 import type { CloudApi, Profile } from './lib/supabase'
 import type { Challenge } from './lib/challenge'
 import { localState, pullAll, importLocalToCloud } from './lib/dataStore'
+import type { SyncState } from './lib/dataStore'
 import AuthScreen from './components/AuthScreen'
 import FriendsScreen from './components/FriendsScreen'
 import ChallengeScreen from './components/ChallengeScreen'
+import ChallengeFriendScreen from './components/ChallengeFriendScreen'
+import ChallengeCreateScreen from './components/ChallengeCreateScreen'
 import './App.css'
 
-type View = 'library' | 'name' | 'list' | 'play' | 'wrongbook' | 'review' | 'study' | 'achievements' | 'auth' | 'friends' | 'challenge'
+type View = 'library' | 'name' | 'list' | 'play' | 'wrongbook' | 'review' | 'study' | 'achievements' | 'auth' | 'friends' | 'challenge' | 'challengeFriend' | 'challengeCreate'
 
 const supabaseClient = createSupabaseClient()
 const api: CloudApi | null = supabaseClient ? createCloudApi(supabaseClient) : null
@@ -70,6 +73,9 @@ function App() {
   const [myProfile, setMyProfile] = useState<Profile | null>(null)
   const [activeChallenge, setActiveChallenge] = useState<Challenge | null>(null)
   const [inviteCode, setInviteCode] = useState<string | null>(null)
+  const [challengeFriend, setChallengeFriend] = useState<Profile | null>(null)
+  const [challengeItems, setChallengeItems] = useState<TemplateItem[] | null>(null)
+  const localSnapshotRef = useRef<SyncState | null>(null)
 
   useEffect(() => { saveTemplates(templates) }, [templates])
   useEffect(() => { saveEntries(entries) }, [entries])
@@ -212,6 +218,8 @@ function App() {
   }
 
   async function handleAuthed(id: string) {
+    // 先快照本地数据，再 hydrate（hydrate 会把空云端写回 state/localStorage）
+    localSnapshotRef.current = localState()
     setUserId(id)
     setView(inviteCode ? 'friends' : 'library')
     await hydrate(id)
@@ -224,6 +232,8 @@ function App() {
     setMyProfile(null)
     setActiveChallenge(null)
     setInviteCode(null)
+    setChallengeFriend(null)
+    setChallengeItems(null)
     setNeedsImport(false)
     const local = localState()
     setTemplates(local.templates)
@@ -238,7 +248,7 @@ function App() {
     if (!api || !userId) return
     setSyncing(true)
     try {
-      await importLocalToCloud(api, userId, localState())
+      await importLocalToCloud(api, userId, localSnapshotRef.current ?? localState())
       await hydrate(userId)
     } finally {
       setSyncing(false)
@@ -249,8 +259,13 @@ function App() {
     if (!api || !userId) { setView('auth'); return }
     setView('friends')
     if (!myProfile) {
-      const p = await api.getMyProfile(userId)
-      if (p) setMyProfile(p)
+      try {
+        let p = await api.getMyProfile(userId)
+        if (!p) p = await api.ensureProfile(userId, '')
+        if (p) setMyProfile(p)
+      } catch {
+        // 网络失败：下方「加载档案」态提供返回按钮退出
+      }
     }
   }
   function handleAcceptChallenge(c: Challenge) {
@@ -261,11 +276,27 @@ function App() {
     setActiveChallenge(null)
     setView('friends')
   }
+  function handleChallengeFriends() {
+    if (!api || !currentTemplate) return
+    if (!userId) { setView('auth'); return }
+    setChallengeItems(currentTemplate.items)
+    setView('challengeFriend')
+  }
+  function handleChallengePick(friend: Profile) {
+    setChallengeFriend(friend)
+    setView('challengeCreate')
+  }
+  function handleChallengeCreated() {
+    setChallengeFriend(null)
+    setChallengeItems(null)
+    setView('friends')
+  }
 
   useEffect(() => {
     if (!api) return
     api.getUserId().then((id) => {
       if (id) {
+        localSnapshotRef.current = localState()
         setUserId(id)
         hydrate(id)
       }
@@ -369,7 +400,7 @@ function App() {
   } else if (view === 'name' && pendingUpload) {
     screen = <NamePrompt fileName={pendingUpload.fileName} count={pendingUpload.result.items.length} onConfirm={handleNameConfirm} onCancel={handleNameCancel} />
   } else if (view === 'list' && currentTemplate) {
-    screen = <SentenceList templateName={currentTemplate.name} items={currentTemplate.items} warnings={currentTemplate.warnings} learned={new Set(learned)} entries={entries} onSelect={handleSelect} onStartStudy={handleStartStudy} onBack={goLibrary} />
+    screen = <SentenceList templateName={currentTemplate.name} items={currentTemplate.items} warnings={currentTemplate.warnings} learned={new Set(learned)} entries={entries} onSelect={handleSelect} onStartStudy={handleStartStudy} onBack={goLibrary} onChallenge={api ? handleChallengeFriends : undefined} />
   } else if (view === 'wrongbook') {
     screen = <WrongbookScreen entries={entries} stats={stats} streak={streak} onBack={goLibrary} onStartReview={handleStartReview} onPractice={handlePractice} onClear={handleClear} />
   } else if (view === 'review') {
@@ -406,12 +437,21 @@ function App() {
         </div>
       )
     } else if (!myProfile) {
-      screen = <div className="sync-loading"><p>☁️ 加载档案…</p></div>
+      screen = (
+        <div className="sync-loading">
+          <p>☁️ 加载档案…</p>
+          <button className="ghost" onClick={goLibrary}>← 返回</button>
+        </div>
+      )
     } else {
       screen = <FriendsScreen api={api} userId={userId} myProfile={myProfile} onBack={goLibrary} onAcceptChallenge={handleAcceptChallenge} inviteCode={inviteCode} />
     }
   } else if (view === 'challenge' && activeChallenge && api) {
     screen = <ChallengeScreen api={api} challenge={activeChallenge} onDone={handleChallengeDone} />
+  } else if (view === 'challengeFriend' && api && userId && challengeItems) {
+    screen = <ChallengeFriendScreen api={api} userId={userId} unitName={currentTemplate?.name ?? ''} onBack={() => setView('list')} onPick={handleChallengePick} />
+  } else if (view === 'challengeCreate' && api && userId && challengeFriend && challengeItems) {
+    screen = <ChallengeCreateScreen api={api} userId={userId} friend={challengeFriend} items={challengeItems} onDone={handleChallengeCreated} />
   } else {
     screen = (
       <>

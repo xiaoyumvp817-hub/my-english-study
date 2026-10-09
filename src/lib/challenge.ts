@@ -30,3 +30,17 @@ export function challengeWinner(c: Challenge): ChallengeWinner | null {
   if (c.challengeeScore > c.challengerScore) return 'challengee'
   return 'draw'
 }
+
+/** 相对「我」的对手 id。 */
+export function challengeOpponentId(c: Challenge, me: string): string {
+  return c.challengerId === me ? c.challengeeId : c.challengerId
+}
+
+/** 从「我」的视角判胜负。未应战返回 null。 */
+export function challengeOutcomeFor(c: Challenge, me: string): 'win' | 'loss' | 'draw' | null {
+  const w = challengeWinner(c)
+  if (w === null || w === 'draw') return w
+  const meIsChallenger = c.challengerId === me
+  const won = meIsChallenger ? w === 'challenger' : w === 'challengee'
+  return won ? 'win' : 'loss'
+}

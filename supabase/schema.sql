@@ -5,13 +5,14 @@ create extension if not exists pgcrypto;
 -- ===== Phase 1: 账号与同步（login-sync spec） =====
 
 create table public.templates (
-  id text primary key,
+  id text not null,
   user_id uuid not null references auth.users(id) on delete cascade,
   name text not null,
   created_at bigint not null,
   items jsonb not null,
   warnings jsonb not null,
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  primary key (user_id, id)
 );
 
 create table public.wrong_entries (

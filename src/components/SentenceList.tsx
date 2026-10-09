@@ -13,9 +13,10 @@ interface Props {
   onSelect: (index: number) => void
   onStartStudy: (items: TemplateItem[]) => void
   onBack: () => void
+  onChallenge?: () => void
 }
 
-export default function SentenceList({ templateName, items, warnings, learned, entries, onSelect, onStartStudy, onBack }: Props) {
+export default function SentenceList({ templateName, items, warnings, learned, entries, onSelect, onStartStudy, onBack, onChallenge }: Props) {
   const statuses = items.map((item) => sentenceStatus(item.en, learned, entries))
   const learnedCount = statuses.filter((s) => s === 'learned').length
   const reviewCount = statuses.filter((s) => s === 'review').length
@@ -50,7 +51,10 @@ export default function SentenceList({ templateName, items, warnings, learned, e
             <span><i className="status-dot review" /> 需复习</span>
           </div>
         </div>
-        <button className="ghost" onClick={onBack}>← 返回模板库</button>
+        <div className="list-head-actions">
+          {onChallenge && <button className="ghost" onClick={onChallenge}>⚔️ 挑战好友</button>}
+          <button className="ghost" onClick={onBack}>← 返回模板库</button>
+        </div>
       </header>
 
       <div className="list-toolbar">

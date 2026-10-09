@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { CloudApi, Profile } from '../lib/supabase'
 import { isValidFriendCode, normalizeFriendCode } from '../lib/friendCode'
 import { friendLeaderboard, sortLeaderboard, rankOf } from '../lib/leaderboard'
+import { challengeOpponentId, challengeOutcomeFor } from '../lib/challenge'
 import type { Challenge } from '../lib/challenge'
 
 interface Props {
@@ -29,7 +30,10 @@ export default function FriendsScreen({ api, userId, myProfile, onBack, onAccept
     api.globalLeaderboard(50).then(setGlobal).catch(() => {})
   }, [api, userId])
 
-  const pending = challenges.filter((c) => c.challengeeId === userId && c.status === 'pending')
+  const pendingIncoming = challenges.filter((c) => c.challengeeId === userId && c.status === 'pending')
+  const pendingOutgoing = challenges.filter((c) => c.challengerId === userId && c.status === 'pending')
+  const completed = challenges.filter((c) => c.status === 'completed')
+  const nameOf = (id: string) => friends.find((f) => f.userId === id)?.displayName ?? '好友'
 
   async function addFriend() {
     setMsg('')
@@ -65,7 +69,7 @@ export default function FriendsScreen({ api, userId, myProfile, onBack, onAccept
 
       <div className="tab-row">
         <button className={`tab ${tab === 'friends' ? 'is-active liquid-glass' : ''}`} onClick={() => setTab('friends')}>好友</button>
-        <button className={`tab ${tab === 'challenges' ? 'is-active liquid-glass' : ''}`} onClick={() => setTab('challenges')}>挑战 {pending.length > 0 && `(${pending.length})`}</button>
+        <button className={`tab ${tab === 'challenges' ? 'is-active liquid-glass' : ''}`} onClick={() => setTab('challenges')}>挑战 {pendingIncoming.length > 0 && `(${pendingIncoming.length})`}</button>
         <button className={`tab ${tab === 'leaderboard' ? 'is-active liquid-glass' : ''}`} onClick={() => setTab('leaderboard')}>排行榜</button>
       </div>
 
@@ -95,13 +99,33 @@ export default function FriendsScreen({ api, userId, myProfile, onBack, onAccept
 
       {tab === 'challenges' && (
         <section className="challenges-tab">
-          {pending.length === 0 && <p className="empty">没有待应战的挑战。</p>}
-          {pending.map((c) => (
+          {pendingIncoming.length === 0 && pendingOutgoing.length === 0 && completed.length === 0 && (
+            <p className="empty">还没有挑战记录，去「好友」页挑战好友吧。</p>
+          )}
+          {pendingIncoming.map((c) => (
             <button key={c.id} className="entry-card" onClick={() => onAcceptChallenge(c)}>
-              <span className="entry-word">应战：{c.words.length} 个单词</span>
-              <span className="entry-zh">对手已答对 {c.challengerScore} 个，敢来吗？</span>
+              <span className="entry-word">⚔️ 应战 {nameOf(c.challengerId)}</span>
+              <span className="entry-zh">对手已答对 {c.challengerScore} 个，{c.words.length} 个单词，敢来吗？</span>
             </button>
           ))}
+          {pendingOutgoing.map((c) => (
+            <div key={c.id} className="entry-card">
+              <span className="entry-word">📤 已挑战 {nameOf(c.challengeeId)}</span>
+              <span className="entry-zh">等待应战（你答对 {c.challengerScore} 个）</span>
+            </div>
+          ))}
+          {completed.map((c) => {
+            const outcome = challengeOutcomeFor(c, userId)
+            const label = outcome === 'win' ? '你赢了 🎉' : outcome === 'loss' ? '你输了' : '平局 🤝'
+            const myScore = c.challengerId === userId ? c.challengerScore : (c.challengeeScore ?? 0)
+            const oppScore = c.challengerId === userId ? (c.challengeeScore ?? 0) : c.challengerScore
+            return (
+              <div key={c.id} className="entry-card">
+                <span className="entry-word">{label}（vs {nameOf(challengeOpponentId(c, userId))}）</span>
+                <span className="entry-zh">比分 {myScore} : {oppScore}</span>
+              </div>
+            )
+          })}
         </section>
       )}
 

@@ -15,6 +15,7 @@ export default function ChallengeScreen({ api, challenge, onDone }: Props) {
   const [index, setIndex] = useState(0)
   const [score, setScore] = useState(0)
   const [done, setDone] = useState(false)
+  const [error, setError] = useState('')
   const startRef = useRef(Date.now())
   const scoreRef = useRef(0)
   const finishedRef = useRef(false)
@@ -24,8 +25,13 @@ export default function ChallengeScreen({ api, challenge, onDone }: Props) {
     if (finishedRef.current) return
     finishedRef.current = true
     setScore(finalScore)
-    await api.setChallengeResult(challenge.id, finalScore, Date.now() - startRef.current)
-    setDone(true)
+    try {
+      await api.setChallengeResult(challenge.id, finalScore, Date.now() - startRef.current)
+      setDone(true)
+    } catch {
+      finishedRef.current = false
+      setError('结果提交失败，请重试')
+    }
   }
 
   // 一句全对 +1（分数 = 答对句数，对齐 spec §2）。
@@ -54,16 +60,24 @@ export default function ChallengeScreen({ api, challenge, onDone }: Props) {
   }
 
   return (
-    <GameScreen
-      key={index}
-      item={items[index]}
-      index={index}
-      total={items.length}
-      startTime={startRef.current}
-      onNext={handleNext}
-      onEnd={() => finish(scoreRef.current)}
-      onWrongWords={() => {}}
-      onCompleted={handleCompleted}
-    />
+    <>
+      {error && (
+        <div className="challenge-error" role="alert">
+          <p className="result fail">{error}</p>
+          <button className="ghost" onClick={() => finish(scoreRef.current)}>重试</button>
+        </div>
+      )}
+      <GameScreen
+        key={index}
+        item={items[index]}
+        index={index}
+        total={items.length}
+        startTime={startRef.current}
+        onNext={handleNext}
+        onEnd={() => finish(scoreRef.current)}
+        onWrongWords={() => {}}
+        onCompleted={handleCompleted}
+      />
+    </>
   )
 }
