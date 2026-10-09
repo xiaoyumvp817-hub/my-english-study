@@ -2,9 +2,12 @@ import { createClient } from '@supabase/supabase-js'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Template } from './templates'
 import type { WrongEntry } from './wrongbook'
+import { emptyStats } from './stats'
 import type { Stats } from './stats'
+import { emptyMotivation } from './motivation'
 import type { Motivation } from './motivation'
 import type { Challenge } from './challenge'
+import { generateUniqueFriendCode } from './friendCode'
 
 // ===== 行类型（与 supabase/schema.sql 列一一对应） =====
 export interface TemplatesRow {
@@ -188,7 +191,82 @@ export function createSupabaseClient(): SupabaseClient | null {
   return createClient(url, key)
 }
 
-// createCloudApi(client) 的 sync 实现留到 Task 5 需要时补齐；本任务只锁定签名与类型。
-export function createCloudApi(_client: SupabaseClient): CloudApi {
-  throw new Error('Task 5 实现 createCloudApi')
+export function createCloudApi(client: SupabaseClient): CloudApi {
+  const uid = async (): Promise<string> => {
+    const { data } = await client.auth.getSession()
+    if (!data.session) throw new Error('未登录')
+    return data.session.user.id
+  }
+
+  async function select<T>(table: string, userId: string): Promise<T[]> {
+    const { data, error } = await client.from(table).select('*').eq('user_id', userId)
+    if (error) throw error
+    return (data ?? []) as T[]
+  }
+  async function upsertRows(table: string, rows: unknown[]): Promise<void> {
+    if (rows.length === 0) return
+    const { error } = await client.from(table).upsert(rows)
+    if (error) throw error
+  }
+
+  return {
+    async signUp(email, password) {
+      const { data, error } = await client.auth.signUp({ email, password })
+      if (error) throw error
+      return data.user?.id ?? (await uid())
+    },
+    async signIn(email, password) {
+      const { data, error } = await client.auth.signInWithPassword({ email, password })
+      if (error) throw error
+      return data.user.id
+    },
+    async signOut() { const { error } = await client.auth.signOut(); if (error) throw error },
+    async getUserId() {
+      const { data } = await client.auth.getSession()
+      return data.session?.user.id ?? null
+    },
+
+    async fetchTemplates(userId) { return (await select<TemplatesRow>('templates', userId)).map(templateFromRow) },
+    async pushTemplates(userId, list) { await upsertRows('templates', list.map((t) => templateToRow(userId, t))) },
+    async fetchEntries(userId) { return (await select<WrongEntryRow>('wrong_entries', userId)).map(entryFromRow) },
+    async pushEntries(userId, list) { await upsertRows('wrong_entries', list.map((e) => entryToRow(userId, e))) },
+    async fetchStats(userId) {
+      const rows = await select<StatsRow>('stats', userId)
+      return rows.length ? statsFromRow(rows[0]) : emptyStats()
+    },
+    async pushStats(userId, stats) { await upsertRows('stats', [statsToRow(userId, stats)]) },
+    async fetchLearned(userId) {
+      const rows = await select<LearnedRow>('learned', userId)
+      return rows.length ? learnedFromRow(rows[0]) : []
+    },
+    async pushLearned(userId, items) { await upsertRows('learned', [learnedToRow(userId, items)]) },
+    async fetchMotivation(userId) {
+      const rows = await select<MotivationRow>('motivation', userId)
+      return rows.length ? motivationFromRow(rows[0]) : emptyMotivation()
+    },
+    async pushMotivation(userId, m) { await upsertRows('motivation', [motivationToRow(userId, m)]) },
+
+    // —— 社交层：ensureProfile 因登录流程依赖，提前到 Task 6 实现；其余 Task 9 补齐 ——
+    async ensureProfile(userId, email) {
+      const displayName = displayNameFromEmail(email)
+      const { data: existing } = await client.from('profiles').select('*').eq('user_id', userId).maybeSingle()
+      if (existing) return profileRowToProfile(existing as ProfileRow)
+      const code = await generateUniqueFriendCode(async (c) => {
+        const { data } = await client.from('profiles').select('friend_code').eq('friend_code', c).maybeSingle()
+        return data !== null
+      })
+      const { error } = await client.from('profiles').insert({ user_id: userId, display_name: displayName, friend_code: code, total_learned: 0 })
+      if (error) throw error
+      return { userId, displayName, friendCode: code, totalLearned: 0 }
+    },
+    async getProfileByCode(_code: string) { throw new Error('Task 9 实现 getProfileByCode') },
+    async addFriendship(_userId: string, _friendId: string) { throw new Error('Task 9 实现 addFriendship') },
+    async listFriendIds(_userId: string) { throw new Error('Task 9 实现 listFriendIds') },
+    async listProfiles(_userIds: string[]) { throw new Error('Task 9 实现 listProfiles') },
+    async getMyProfile(_userId: string) { throw new Error('Task 9 实现 getMyProfile') },
+    async createChallenge(_challenge: Challenge) { throw new Error('Task 9 实现 createChallenge') },
+    async listChallengesFor(_userId: string) { throw new Error('Task 9 实现 listChallengesFor') },
+    async setChallengeResult(_challengeId: string, _score: number, _durationMs: number) { throw new Error('Task 9 实现 setChallengeResult') },
+    async globalLeaderboard(_limit: number) { throw new Error('Task 9 实现 globalLeaderboard') },
+  }
 }

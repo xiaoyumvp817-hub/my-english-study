@@ -24,9 +24,16 @@ import type { Motivation } from './lib/motivation'
 import { loadLearned, saveLearned, commitLearned } from './lib/learned'
 import type { QuizType } from './lib/quiz'
 import { xpForAnswer } from './lib/quiz'
+import { createSupabaseClient, createCloudApi } from './lib/supabase'
+import type { CloudApi } from './lib/supabase'
+import { localState, pullAll, importLocalToCloud } from './lib/dataStore'
+import AuthScreen from './components/AuthScreen'
 import './App.css'
 
-type View = 'library' | 'name' | 'list' | 'play' | 'wrongbook' | 'review' | 'study' | 'achievements'
+type View = 'library' | 'name' | 'list' | 'play' | 'wrongbook' | 'review' | 'study' | 'achievements' | 'auth'
+
+const supabaseClient = createSupabaseClient()
+const api: CloudApi | null = supabaseClient ? createCloudApi(supabaseClient) : null
 
 type StudyPhase = 'select' | 'type'
 interface StudySession {
@@ -54,6 +61,9 @@ function App() {
   const prevLevelRef = useRef(levelForXp(stats.xp))
   const [motivation, setMotivation] = useState<Motivation>(() => loadMotivation())
   const [newAch, setNewAch] = useState<string[]>([])
+  const [userId, setUserId] = useState<string | null>(null)
+  const [syncing, setSyncing] = useState(false)
+  const [needsImport, setNeedsImport] = useState(false)
 
   useEffect(() => { saveTemplates(templates) }, [templates])
   useEffect(() => { saveEntries(entries) }, [entries])
@@ -175,6 +185,67 @@ function App() {
     setNewAch([])
   }
 
+  async function hydrate(id: string) {
+    if (!api) return
+    setSyncing(true)
+    try {
+      const hasLocal = templates.length > 0 || entries.length > 0 || stats.totalLearned > 0 || learned.length > 0
+      const s = await pullAll(api, id)
+      setTemplates(s.templates)
+      setEntries(s.entries)
+      setStats(s.stats)
+      setLearned(s.learned)
+      setMotivation(s.motivation)
+      const cloudEmpty = s.templates.length === 0 && s.entries.length === 0 && s.stats.totalLearned === 0 && s.learned.length === 0
+      setNeedsImport(hasLocal && cloudEmpty)
+    } finally {
+      setSyncing(false)
+    }
+  }
+
+  async function handleAuthed(id: string) {
+    setUserId(id)
+    setView('library')
+    await hydrate(id)
+  }
+
+  async function handleSignOut() {
+    if (!api) return
+    await api.signOut()
+    setUserId(null)
+    setNeedsImport(false)
+    const local = localState()
+    setTemplates(local.templates)
+    setEntries(local.entries)
+    setStats(local.stats)
+    setLearned(local.learned)
+    setMotivation(local.motivation)
+    setView('library')
+  }
+
+  async function handleImportLocal() {
+    if (!api || !userId) return
+    setSyncing(true)
+    try {
+      await importLocalToCloud(api, userId, localState())
+      await hydrate(userId)
+    } finally {
+      setSyncing(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!api) return
+    api.getUserId().then((id) => {
+      if (id) {
+        setUserId(id)
+        hydrate(id)
+      }
+    })
+    // 仅会话恢复时执行一次
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   function handleStartStudy(items: TemplateItem[]) {
     setSession({ items, index: 0, phase: 'select' })
     setSessionStart(Date.now())
@@ -227,7 +298,9 @@ function App() {
   }
 
   let screen
-  if (view === 'play' && currentIndex !== null && currentTemplate) {
+  if (syncing) {
+    screen = <div className="sync-loading"><p>☁️ 正在同步…</p></div>
+  } else if (view === 'play' && currentIndex !== null && currentTemplate) {
     screen = (
       <GameScreen key={currentIndex} item={currentTemplate.items[currentIndex]} index={currentIndex}
         total={currentTemplate.items.length} onNext={handleSentenceComplete} onEnd={handleEndSession} onWrongWords={handleWrongWords} onCompleted={handleSentenceCompleted} />
@@ -274,9 +347,38 @@ function App() {
         onUseMakeup={handleUseMakeup}
       />
     )
+  } else if (view === 'auth') {
+    screen = api ? (
+      <AuthScreen api={api} onAuthed={handleAuthed} onBack={goLibrary} />
+    ) : (
+      <div className="auth">
+        <p className="subtitle">未配置 Supabase，无法登录</p>
+        <button className="ghost" onClick={goLibrary}>← 返回</button>
+      </div>
+    )
   } else {
     screen = (
       <>
+        <div className="account-bar">
+          {api ? (
+            userId ? (
+              <>
+                <span className="account-user">👤 已登录</span>
+                <button className="ghost" onClick={handleSignOut}>登出</button>
+              </>
+            ) : (
+              <button className="ghost" onClick={() => setView('auth')}>👤 登录 / 注册</button>
+            )
+          ) : (
+            <span className="account-hint" title="在 .env.local 配置 VITE_SUPABASE_URL 与 VITE_SUPABASE_ANON_KEY 后启用登录">未配置云端</span>
+          )}
+        </div>
+        {needsImport && userId && (
+          <div className="import-banner">
+            <span>检测到本地学习数据，是否导入到云端账号？</span>
+            <button className="primary" onClick={handleImportLocal}>导入本地数据</button>
+          </div>
+        )}
         <TodayCard
           todayCount={stats.dailyHistory[today] ?? 0}
           goal={motivation.goalPerDay}

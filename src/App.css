@@ -1431,3 +1431,90 @@
   padding: 4px 12px;
   font-size: 0.9rem;
 }
+
+/* ---------- Auth / Account ---------- */
+
+.account-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.account-user {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.account-hint {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.auth-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auth-form label span {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.auth-form input {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 1rem;
+  color: var(--ink);
+}
+
+.auth-form input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.auth-form .result {
+  margin: 0;
+  text-align: left;
+}
+
+.import-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+}
+
+.sync-loading {
+  text-align: center;
+  padding: 60px 0;
+  color: var(--muted);
+  font-size: 1.1rem;
+}
+
+@media (max-width: 480px) {
+  .import-banner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
