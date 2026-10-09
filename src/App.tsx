@@ -25,12 +25,15 @@ import { loadLearned, saveLearned, commitLearned } from './lib/learned'
 import type { QuizType } from './lib/quiz'
 import { xpForAnswer } from './lib/quiz'
 import { createSupabaseClient, createCloudApi } from './lib/supabase'
-import type { CloudApi } from './lib/supabase'
+import type { CloudApi, Profile } from './lib/supabase'
+import type { Challenge } from './lib/challenge'
 import { localState, pullAll, importLocalToCloud } from './lib/dataStore'
 import AuthScreen from './components/AuthScreen'
+import FriendsScreen from './components/FriendsScreen'
+import ChallengeScreen from './components/ChallengeScreen'
 import './App.css'
 
-type View = 'library' | 'name' | 'list' | 'play' | 'wrongbook' | 'review' | 'study' | 'achievements' | 'auth'
+type View = 'library' | 'name' | 'list' | 'play' | 'wrongbook' | 'review' | 'study' | 'achievements' | 'auth' | 'friends' | 'challenge'
 
 const supabaseClient = createSupabaseClient()
 const api: CloudApi | null = supabaseClient ? createCloudApi(supabaseClient) : null
@@ -64,6 +67,9 @@ function App() {
   const [userId, setUserId] = useState<string | null>(null)
   const [syncing, setSyncing] = useState(false)
   const [needsImport, setNeedsImport] = useState(false)
+  const [myProfile, setMyProfile] = useState<Profile | null>(null)
+  const [activeChallenge, setActiveChallenge] = useState<Challenge | null>(null)
+  const [inviteCode, setInviteCode] = useState<string | null>(null)
 
   useEffect(() => { saveTemplates(templates) }, [templates])
   useEffect(() => { saveEntries(entries) }, [entries])
@@ -198,6 +204,8 @@ function App() {
       setMotivation(s.motivation)
       const cloudEmpty = s.templates.length === 0 && s.entries.length === 0 && s.stats.totalLearned === 0 && s.learned.length === 0
       setNeedsImport(hasLocal && cloudEmpty)
+      const p = await api.getMyProfile(id)
+      if (p) setMyProfile(p)
     } finally {
       setSyncing(false)
     }
@@ -205,7 +213,7 @@ function App() {
 
   async function handleAuthed(id: string) {
     setUserId(id)
-    setView('library')
+    setView(inviteCode ? 'friends' : 'library')
     await hydrate(id)
   }
 
@@ -213,6 +221,9 @@ function App() {
     if (!api) return
     await api.signOut()
     setUserId(null)
+    setMyProfile(null)
+    setActiveChallenge(null)
+    setInviteCode(null)
     setNeedsImport(false)
     const local = localState()
     setTemplates(local.templates)
@@ -234,6 +245,23 @@ function App() {
     }
   }
 
+  async function handleOpenFriends() {
+    if (!api || !userId) { setView('auth'); return }
+    setView('friends')
+    if (!myProfile) {
+      const p = await api.getMyProfile(userId)
+      if (p) setMyProfile(p)
+    }
+  }
+  function handleAcceptChallenge(c: Challenge) {
+    setActiveChallenge(c)
+    setView('challenge')
+  }
+  function handleChallengeDone() {
+    setActiveChallenge(null)
+    setView('friends')
+  }
+
   useEffect(() => {
     if (!api) return
     api.getUserId().then((id) => {
@@ -244,6 +272,18 @@ function App() {
     })
     // 仅会话恢复时执行一次
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    function onHash() {
+      const m = window.location.hash.match(/^#\/f\/([A-Za-z0-9]+)/)
+      if (!m) return
+      setInviteCode(m[1])
+      setView('friends')
+    }
+    window.addEventListener('hashchange', onHash)
+    onHash()
+    return () => window.removeEventListener('hashchange', onHash)
   }, [])
 
   function handleStartStudy(items: TemplateItem[]) {
@@ -356,6 +396,22 @@ function App() {
         <button className="ghost" onClick={goLibrary}>← 返回</button>
       </div>
     )
+  } else if (view === 'friends') {
+    if (!api || !userId) {
+      screen = (
+        <div className="auth">
+          <p className="subtitle">请先登录才能使用好友功能</p>
+          <button className="primary" onClick={() => setView('auth')}>👤 登录 / 注册</button>
+          <button className="ghost" onClick={goLibrary}>← 返回</button>
+        </div>
+      )
+    } else if (!myProfile) {
+      screen = <div className="sync-loading"><p>☁️ 加载档案…</p></div>
+    } else {
+      screen = <FriendsScreen api={api} userId={userId} myProfile={myProfile} onBack={goLibrary} onAcceptChallenge={handleAcceptChallenge} inviteCode={inviteCode} />
+    }
+  } else if (view === 'challenge' && activeChallenge && api) {
+    screen = <ChallengeScreen api={api} challenge={activeChallenge} onDone={handleChallengeDone} />
   } else {
     screen = (
       <>
@@ -364,10 +420,14 @@ function App() {
             userId ? (
               <>
                 <span className="account-user">👤 已登录</span>
+                <button className="ghost" onClick={handleOpenFriends}>👫 好友</button>
                 <button className="ghost" onClick={handleSignOut}>登出</button>
               </>
             ) : (
-              <button className="ghost" onClick={() => setView('auth')}>👤 登录 / 注册</button>
+              <>
+                <button className="ghost" onClick={handleOpenFriends}>👫 好友</button>
+                <button className="ghost" onClick={() => setView('auth')}>👤 登录 / 注册</button>
+              </>
             )
           ) : (
             <span className="account-hint" title="在 .env.local 配置 VITE_SUPABASE_URL 与 VITE_SUPABASE_ANON_KEY 后启用登录">未配置云端</span>

@@ -10,15 +10,16 @@ interface Props {
   myProfile: Profile
   onBack: () => void
   onAcceptChallenge: (c: Challenge) => void
+  inviteCode?: string | null
 }
 
-export default function FriendsScreen({ api, userId, myProfile, onBack, onAcceptChallenge }: Props) {
+export default function FriendsScreen({ api, userId, myProfile, onBack, onAcceptChallenge, inviteCode }: Props) {
   const [tab, setTab] = useState<'friends' | 'challenges' | 'leaderboard'>('friends')
   const [friendIds, setFriendIds] = useState<string[]>([])
   const [friends, setFriends] = useState<Profile[]>([])
   const [challenges, setChallenges] = useState<Challenge[]>([])
   const [global, setGlobal] = useState<Profile[]>([])
-  const [code, setCode] = useState('')
+  const [code, setCode] = useState(inviteCode ?? '')
   const [msg, setMsg] = useState('')
   const [leaderTab, setLeaderTab] = useState<'friends' | 'global'>('friends')
 
