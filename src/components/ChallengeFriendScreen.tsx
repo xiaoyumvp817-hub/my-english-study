@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { CloudApi, Profile } from '../lib/supabase'
+import { GiCrossedSwords } from 'react-icons/gi'
 
 interface Props {
   api: CloudApi
@@ -20,7 +21,7 @@ export default function ChallengeFriendScreen({ api, userId, unitName, onBack, o
     <div className="challenge-friend">
       <header className="list-head">
         <div>
-          <h1 className="title">⚔️ 挑战好友</h1>
+          <h1 className="title"><GiCrossedSwords /> 挑战好友</h1>
           <p className="subtitle">和好友比一比「{unitName}」</p>
         </div>
         <button className="ghost" onClick={onBack}>← 返回</button>

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { GiTrophy } from 'react-icons/gi'
 import type { Stats } from '../lib/stats'
 import { dateKey } from '../lib/stats'
 import type { Template } from '../lib/templates'
@@ -62,7 +63,7 @@ export default function AchievementsScreen({
     <div className="achievements">
       <header className="list-head">
         <div>
-          <h1 className="title">🏆 成就</h1>
+          <h1 className="title"><GiTrophy /> 成就</h1>
           <p className="subtitle">收集图鉴 · 点亮徽章 · 坚持打卡</p>
         </div>
         <button className="ghost" onClick={onBack}>← 返回</button>

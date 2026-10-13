@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { WrongEntry } from '../lib/wrongbook'
+import { GiPencilRuler } from 'react-icons/gi'
 import { dueEntries, isMastered } from '../lib/wrongbook'
 import type { Stats } from '../lib/stats'
 import StreakBar from './StreakBar'
@@ -32,7 +33,7 @@ export default function WrongbookScreen({ entries, stats, streak, onBack, onStar
     <div className="wrongbook">
       <header className="list-head">
         <div>
-          <h1 className="title">📒 错题本</h1>
+          <h1 className="title"><GiPencilRuler /> 错题本</h1>
           <StreakBar stats={stats} streak={streak} />
         </div>
         <button className="ghost" onClick={onBack}>← 返回</button>

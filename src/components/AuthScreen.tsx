@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { GiPerson } from 'react-icons/gi'
 import type { CloudApi } from '../lib/supabase'
 import { displayNameFromEmail } from '../lib/supabase'
 
@@ -35,7 +36,7 @@ export default function AuthScreen({ api, onAuthed, onBack }: Props) {
     <div className="auth">
       <header className="list-head">
         <div>
-          <h1 className="title">👤 登录 / 注册</h1>
+          <h1 className="title"><GiPerson /> 登录 / 注册</h1>
           <p className="subtitle">登录后可与好友 PK、上排行榜</p>
         </div>
         <button className="ghost" onClick={onBack}>← 返回</button>

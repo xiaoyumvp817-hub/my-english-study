@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Template, TemplateSort } from '../lib/templates'
+import { GiPencilRuler } from 'react-icons/gi'
 import { sortTemplates } from '../lib/templates'
 import { downloadExcelTemplate } from '../lib/excel'
 import type { ParseResult } from '../types'
@@ -56,7 +57,7 @@ export default function TemplateLibrary({
           <p className="subtitle">上传的每批单词按名字和时间分类管理</p>
         </div>
         <div className="head-actions">
-          <button className="ghost" onClick={onOpenWrongbook}>📒 错题本</button>
+          <button className="ghost" onClick={onOpenWrongbook}><GiPencilRuler /> 错题本</button>
           <button className="ghost" onClick={downloadExcelTemplate}>📥 下载模板</button>
         </div>
       </header>

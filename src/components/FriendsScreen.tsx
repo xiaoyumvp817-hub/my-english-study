@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { CloudApi, Profile } from '../lib/supabase'
+import { GiThreeFriends } from 'react-icons/gi'
 import { isValidFriendCode, normalizeFriendCode } from '../lib/friendCode'
 import { friendLeaderboard, sortLeaderboard, rankOf } from '../lib/leaderboard'
 import { challengeOpponentId, challengeOutcomeFor } from '../lib/challenge'
@@ -61,7 +62,7 @@ export default function FriendsScreen({ api, userId, myProfile, onBack, onAccept
     <div className="friends">
       <header className="list-head">
         <div>
-          <h1 className="title">👫 好友</h1>
+          <h1 className="title"><GiThreeFriends /> 好友</h1>
           <p className="subtitle">和好朋友一起学、比一比</p>
         </div>
         <button className="ghost" onClick={onBack}>← 返回</button>

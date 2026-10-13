@@ -34,6 +34,8 @@ import FriendsScreen from './components/FriendsScreen'
 import ChallengeScreen from './components/ChallengeScreen'
 import ChallengeFriendScreen from './components/ChallengeFriendScreen'
 import ChallengeCreateScreen from './components/ChallengeCreateScreen'
+import { GiPerson, GiThreeFriends } from 'react-icons/gi'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import './App.css'
 
 type View = 'library' | 'name' | 'list' | 'play' | 'wrongbook' | 'review' | 'study' | 'achievements' | 'auth' | 'friends' | 'challenge' | 'challengeFriend' | 'challengeCreate'
@@ -49,6 +51,7 @@ interface StudySession {
 }
 
 function App() {
+  const reduceMotion = useReducedMotion()
   const [templates, setTemplates] = useState<Template[]>(() => loadTemplates())
   const [currentTemplate, setCurrentTemplate] = useState<Template | null>(null)
   const [pendingUpload, setPendingUpload] = useState<{ result: ParseResult; fileName: string } | null>(null)
@@ -432,7 +435,7 @@ function App() {
       screen = (
         <div className="auth">
           <p className="subtitle">请先登录才能使用好友功能</p>
-          <button className="primary" onClick={() => setView('auth')}>👤 登录 / 注册</button>
+          <button className="primary" onClick={() => setView('auth')}><GiPerson /> 登录 / 注册</button>
           <button className="ghost" onClick={goLibrary}>← 返回</button>
         </div>
       )
@@ -459,14 +462,15 @@ function App() {
           {api ? (
             userId ? (
               <>
-                <span className="account-user">👤 已登录</span>
-                <button className="ghost" onClick={handleOpenFriends}>👫 好友</button>
+                <span className="account-user"><GiPerson /> {myProfile?.displayName ?? '用户'}</span>
+                <span className="account-status" role="status">已登录</span>
+                <button className="ghost" onClick={handleOpenFriends}><GiThreeFriends /> 好友</button>
                 <button className="ghost" onClick={handleSignOut}>登出</button>
               </>
             ) : (
               <>
-                <button className="ghost" onClick={handleOpenFriends}>👫 好友</button>
-                <button className="ghost" onClick={() => setView('auth')}>👤 登录 / 注册</button>
+                <button className="ghost" onClick={handleOpenFriends}><GiThreeFriends /> 好友</button>
+                <button className="ghost" onClick={() => setView('auth')}><GiPerson /> 登录 / 注册</button>
               </>
             )
           ) : (
@@ -498,9 +502,18 @@ function App() {
     <>
       <AmbientBackground />
       <div className="app">
-        <div className="screen" key={view}>
-          {screen}
-        </div>
+        <AnimatePresence mode="wait">
+          <motion.div
+            className="screen"
+            key={view}
+            initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -12 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
+          >
+            {screen}
+          </motion.div>
+        </AnimatePresence>
         {showSummary && (
           <StudySummary
             today={stats.dailyHistory[dateKey(new Date())] ?? 0}

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { TemplateItem } from '../types'
+import { GiCrossedSwords } from 'react-icons/gi'
 import type { WrongEntry } from '../lib/wrongbook'
 import { sentenceStatus } from '../lib/learned'
 import CoverImage from './CoverImage'
@@ -52,7 +53,7 @@ export default function SentenceList({ templateName, items, warnings, learned, e
           </div>
         </div>
         <div className="list-head-actions">
-          {onChallenge && <button className="ghost" onClick={onChallenge}>⚔️ 挑战好友</button>}
+          {onChallenge && <button className="ghost" onClick={onChallenge}><GiCrossedSwords /> 挑战好友</button>}
           <button className="ghost" onClick={onBack}>← 返回模板库</button>
         </div>
       </header>

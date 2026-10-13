@@ -949,15 +949,6 @@
 
 /* ---------- Motion & glass polish ---------- */
 
-.screen {
-  animation: screen-in 0.35s ease both;
-}
-
-@keyframes screen-in {
-  from { opacity: 0; transform: translateY(14px); }
-  to { opacity: 1; transform: none; }
-}
-
 .sentence-list li {
   animation: item-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
@@ -1000,7 +991,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .screen,
   .sentence-list li {
     animation: none;
   }
@@ -1156,6 +1146,31 @@
   opacity: 0.04;
 }
 
+.ambient-layer {
+  position: absolute;
+  inset: 0;
+}
+
+.ambient-aurora {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(60% 50% at 15% 8%, oklch(0.82 0.11 200 / 0.16), transparent 62%),
+    radial-gradient(50% 42% at 88% 90%, oklch(0.86 0.13 78 / 0.15), transparent 60%),
+    radial-gradient(44% 40% at 75% 12%, oklch(0.84 0.11 320 / 0.10), transparent 60%);
+}
+
+.ambient-glow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 60vmax;
+  height: 60vmax;
+  margin: -30vmax 0 0 -30vmax;
+  background: radial-gradient(circle, oklch(0.9 0.12 78 / 0.10), transparent 62%);
+  filter: blur(6px);
+}
+
 .float-shape {
   position: absolute;
   bottom: -48px;
@@ -1238,6 +1253,19 @@
   .game-card::after,
   .quiz-card::after { animation: none; }
   .progress-fill { transition: none; }
+  .primary::after,
+  .ghost::after,
+  .tab::after { display: none; }
+  .primary,
+  .ghost,
+  .tab,
+  .entry-card,
+  .today-card { transition: none; }
+  .primary:hover,
+  .ghost:hover,
+  .tab:hover,
+  .entry-card:hover,
+  .today-card:hover { transform: none; }
 }
 
 /* ---------- Motivation: today card + achievements ---------- */
@@ -1445,6 +1473,26 @@
 .account-user {
   color: var(--muted);
   font-size: 0.9rem;
+}
+
+.account-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 2px 10px;
+}
+
+.account-status::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
 }
 
 .account-hint {
@@ -1684,4 +1732,86 @@
   margin: 0;
   flex: 1;
   text-align: left;
+}
+
+/* ---------- Premium button polish ---------- */
+
+.primary,
+.ghost,
+.tab {
+  position: relative;
+  overflow: hidden;
+  transition:
+    background 0.2s,
+    color 0.2s,
+    border-color 0.2s,
+    box-shadow 0.25s var(--ease-spring),
+    transform 0.25s var(--ease-spring);
+}
+
+/* 光泽扫过：hover 时一道高光从左扫到右 */
+.primary::after,
+.ghost::after,
+.tab::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 55%;
+  height: 100%;
+  background: linear-gradient(105deg, transparent, oklch(1 0 0 / 0.32), transparent);
+  transform: translateX(-170%) skewX(-14deg);
+  transition: transform 0.7s var(--ease-spring);
+  pointer-events: none;
+}
+
+.primary:hover::after,
+.ghost:hover::after,
+.tab:hover::after {
+  transform: translateX(300%) skewX(-14deg);
+}
+
+/* 悬浮上浮 + 光晕 */
+.primary:hover {
+  transform: translateY(-1px) scale(1.03);
+  box-shadow: 0 8px 22px -8px var(--accent);
+}
+
+.ghost:hover,
+.tab:hover {
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 4px 14px -6px oklch(0 0 0 / 0.22);
+}
+
+/* 键盘聚焦光环 */
+.primary:focus-visible,
+.ghost:focus-visible,
+.tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* 卡片类：轻微上浮（不加 overflow，避免裁剪内容） */
+.entry-card,
+.today-card {
+  transition:
+    border-color 0.2s,
+    box-shadow 0.25s var(--ease-spring),
+    transform 0.25s var(--ease-spring);
+}
+
+.entry-card:hover,
+.today-card:hover {
+  transform: translateY(-2px);
+}
+
+/* ---------- 像素游戏图标（react-icons）对齐 ---------- */
+.title svg,
+button svg,
+.account-user svg {
+  vertical-align: -0.125em;
+}
+
+button svg {
+  margin-right: 6px;
 }
