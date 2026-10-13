@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { sentenceStatus, loadLearned, saveLearned, addLearned, commitLearned } from './learned'
 import type { WrongEntry } from './wrongbook'
+import { MASTERED_STABILITY_DAYS } from './fsrs'
 
 afterEach(() => { vi.unstubAllGlobals() })
 
@@ -12,9 +13,9 @@ function entry(over: Partial<WrongEntry> = {}): WrongEntry {
     word: 'collect',
     wordIndex: 0,
     addedAt: 0,
-    repetition: 0,
-    intervalDays: 1,
-    easeFactor: 2.5,
+    stability: 0,
+    difficulty: 0,
+    state: 0,
     dueAt: 0,
     reviews: 0,
     lapses: 0,
@@ -58,12 +59,12 @@ describe('sentenceStatus', () => {
   })
 
   it('returns learned when related words are all mastered', () => {
-    const mastered = entry({ repetition: 4, intervalDays: 21 })
+    const mastered = entry({ stability: MASTERED_STABILITY_DAYS })
     expect(sentenceStatus('collect sunshine', new Set(), [mastered])).toBe('learned')
   })
 
   it('returns review when a mastered word is joined by a new unmastered one', () => {
-    const mastered = entry({ repetition: 4, intervalDays: 21 })
+    const mastered = entry({ stability: MASTERED_STABILITY_DAYS })
     const fresh = entry({ key: 'a|1', word: 'sunshine', wordIndex: 1 })
     expect(sentenceStatus('collect sunshine', new Set(['collect sunshine']), [mastered, fresh])).toBe('review')
   })

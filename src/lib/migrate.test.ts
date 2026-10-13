@@ -4,7 +4,7 @@ import { emptyStats } from './stats'
 import { emptyMotivation } from './motivation'
 import type { WrongEntry } from './wrongbook'
 
-const e = (key: string): WrongEntry => ({ key, en: key, zh: '', word: key, wordIndex: 0, addedAt: 1, repetition: 0, intervalDays: 1, easeFactor: 2.5, dueAt: 1, reviews: 0, lapses: 0, lastReviewAt: 0 })
+const e = (key: string): WrongEntry => ({ key, en: key, zh: '', word: key, wordIndex: 0, addedAt: 1, stability: 0, difficulty: 0, state: 0, dueAt: 1, reviews: 0, lapses: 0, lastReviewAt: 0 })
 
 describe('mergeEntries', () => {
   it('按 key 去重，云端优先', () => {

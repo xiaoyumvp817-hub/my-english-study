@@ -22,7 +22,7 @@ describe('template 映射', () => {
 })
 
 describe('entry 映射', () => {
-  const e: WrongEntry = { key: 'hello|0', en: 'hello', zh: '你好', word: 'hello', wordIndex: 0, addedAt: 1, repetition: 0, intervalDays: 1, easeFactor: 2.5, dueAt: 3, reviews: 0, lapses: 0, lastReviewAt: 0 }
+  const e: WrongEntry = { key: 'hello|0', en: 'hello', zh: '你好', word: 'hello', wordIndex: 0, addedAt: 1, stability: 0, difficulty: 0, state: 0, dueAt: 3, reviews: 0, lapses: 0, lastReviewAt: 0 }
   it('往返不变', () => {
     expect(entryFromRow(entryToRow(USER, e))).toEqual(e)
   })
