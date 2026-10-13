@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import type { TemplateItem } from '../types'
 import { tokenize, wordTokens, isCorrect } from '../lib/tokenize'
@@ -43,6 +43,7 @@ export default function SentenceQuiz({ item, continueLabel, onComplete, onWrongW
   const [revealed, setRevealed] = useState<boolean[]>(() => words.map(() => false))
   const [hint, setHint] = useState<HintState | null>(null)
   const [celebrate, setCelebrate] = useState(false)
+  const continueRef = useRef<HTMLButtonElement>(null)
 
   const wordTexts = useMemo(() => words.map((w) => w.text), [words])
   const nextAction = nextHint(wordTexts, answers, hint)
@@ -110,8 +111,17 @@ export default function SentenceQuiz({ item, continueLabel, onComplete, onWrongW
 
   const allCorrect = checked && results.every(Boolean)
 
+  // 进入句子：聚焦第一个空（上手即打）。朗读仍为手动提示，不自动播放。
   useEffect(() => {
-    if (allCorrect) setCelebrate(true)
+    document.getElementById('word-0')?.focus()
+  }, [item.en])
+
+  useEffect(() => {
+    if (allCorrect) {
+      setCelebrate(true)
+      // 聚焦「下一句」按钮，让 Enter 直接过关
+      continueRef.current?.focus()
+    }
   }, [allCorrect])
 
   return (
@@ -142,7 +152,7 @@ export default function SentenceQuiz({ item, continueLabel, onComplete, onWrongW
 
           <div className="game-actions">
             {allCorrect ? (
-              <button type="button" className="primary" onClick={onComplete}>
+              <button type="button" className="primary" onClick={onComplete} ref={continueRef}>
                 {continueLabel}
               </button>
             ) : (

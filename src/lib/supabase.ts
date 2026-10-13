@@ -28,9 +28,9 @@ export interface WrongEntryRow {
   word: string
   word_index: number
   added_at: number
-  repetition: number
-  interval_days: number
-  ease_factor: number
+  stability: number
+  difficulty: number
+  state: number
   due_at: number
   reviews: number
   lapses: number
@@ -110,15 +110,15 @@ export function templateFromRow(r: TemplatesRow): Template {
 export function entryToRow(userId: string, e: WrongEntry): WrongEntryRow {
   return {
     user_id: userId, key: e.key, en: e.en, zh: e.zh, word: e.word, word_index: e.wordIndex,
-    added_at: e.addedAt, repetition: e.repetition, interval_days: e.intervalDays,
-    ease_factor: e.easeFactor, due_at: e.dueAt, reviews: e.reviews, lapses: e.lapses, last_review_at: e.lastReviewAt,
+    added_at: e.addedAt, stability: e.stability, difficulty: e.difficulty, state: e.state,
+    due_at: e.dueAt, reviews: e.reviews, lapses: e.lapses, last_review_at: e.lastReviewAt,
   }
 }
 export function entryFromRow(r: WrongEntryRow): WrongEntry {
   return {
     key: r.key, en: r.en, zh: r.zh, word: r.word, wordIndex: r.word_index,
-    addedAt: r.added_at, repetition: r.repetition, intervalDays: r.interval_days,
-    easeFactor: r.ease_factor, dueAt: r.due_at, reviews: r.reviews, lapses: r.lapses, lastReviewAt: r.last_review_at,
+    addedAt: r.added_at, stability: r.stability, difficulty: r.difficulty, state: r.state,
+    dueAt: r.due_at, reviews: r.reviews, lapses: r.lapses, lastReviewAt: r.last_review_at,
   }
 }
 

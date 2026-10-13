@@ -26,3 +26,6 @@ dist-ssr
 # Sample / validation artifacts
 _samples/
 samples/
+
+# Supabase CLI temp
+supabase/.temp/
