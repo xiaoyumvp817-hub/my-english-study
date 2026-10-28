@@ -15,6 +15,7 @@ interface Props {
   onRename: (id: string, name: string) => void
   onDelete: (id: string) => void
   onOpenWrongbook: () => void
+  onOpenReviewList: () => void
 }
 
 function formatDate(ts: number): string {
@@ -32,6 +33,7 @@ export default function TemplateLibrary({
   onRename,
   onDelete,
   onOpenWrongbook,
+  onOpenReviewList,
 }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
@@ -57,6 +59,7 @@ export default function TemplateLibrary({
           <p className="subtitle">上传的每批单词按名字和时间分类管理</p>
         </div>
         <div className="head-actions">
+          <button className="ghost" onClick={onOpenReviewList}>📝 需复习</button>
           <button className="ghost" onClick={onOpenWrongbook}><GiPencilRuler /> 错题本</button>
           <button className="ghost" onClick={downloadExcelTemplate}>📥 下载模板</button>
         </div>

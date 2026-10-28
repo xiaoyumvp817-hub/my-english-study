@@ -10,8 +10,10 @@ export default defineConfig({
     allowedHosts: ['.loca.lt', '.trycloudflare.com'],
   },
   test: {
-    // Vitest 5.0.1 并行跑多个文件时（Windows + Node 24）会触发
-    // "failed to find the current suite"，改为顺序执行文件规避。
+    // Vitest 5.0.1 在 Windows + Node 24 下默认 threads 池会报
+    // "Vitest failed to find the current suite" / "reading 'config'"，
+    // 改用 forks 池规避；同时顺序执行文件，避免并行时的同类崩溃。
+    pool: 'forks',
     fileParallelism: false,
   },
 })

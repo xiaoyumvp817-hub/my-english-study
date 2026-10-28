@@ -3,6 +3,8 @@ import type { TemplateItem } from '../types'
 import { GiCrossedSwords } from 'react-icons/gi'
 import type { WrongEntry } from '../lib/wrongbook'
 import { sentenceStatus } from '../lib/learned'
+import { pickBatch } from '../lib/batchSelect'
+import type { BatchFilter, BatchOrder } from '../lib/batchSelect'
 import CoverImage from './CoverImage'
 
 interface Props {
@@ -22,6 +24,11 @@ export default function SentenceList({ templateName, items, warnings, learned, e
   const learnedCount = statuses.filter((s) => s === 'learned').length
   const reviewCount = statuses.filter((s) => s === 'review').length
   const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set())
+  const [filter, setFilter] = useState<BatchFilter>('review')
+  const [count, setCount] = useState(10)
+  const [order, setOrder] = useState<BatchOrder>('order')
+
+  const FILTER_LABEL: Record<BatchFilter, string> = { review: '需复习', new: '未学习', all: '全部' }
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -36,6 +43,9 @@ export default function SentenceList({ templateName, items, warnings, learned, e
   }
   function clearAll() {
     setSelected(new Set())
+  }
+  function autoSelect() {
+    setSelected(new Set(pickBatch(items, statuses, filter, count, order)))
   }
   function startStudy() {
     onStartStudy(items.filter((item) => selected.has(item.id)))
@@ -66,6 +76,32 @@ export default function SentenceList({ templateName, items, warnings, learned, e
         <button className="primary" disabled={selected.size === 0} onClick={startStudy}>
           {selected.size > 0 ? `开始学习（${selected.size}）` : '开始学习'}
         </button>
+      </div>
+
+      <div className="list-batch">
+        <span className="list-batch-label">状态</span>
+        <div className="list-batch-group">
+          {(['review', 'new', 'all'] as BatchFilter[]).map((f) => (
+            <button key={f} className={`ghost ${filter === f ? 'is-active' : ''}`} onClick={() => setFilter(f)}>
+              {FILTER_LABEL[f]}
+            </button>
+          ))}
+        </div>
+        <span className="list-batch-label">每次</span>
+        <input
+          className="list-batch-count"
+          type="number"
+          min={1}
+          value={count}
+          onChange={(e) => setCount(Math.max(1, Math.floor(Number(e.target.value)) || 1))}
+          aria-label="每次勾选个数"
+        />
+        <span className="list-batch-label">个</span>
+        <div className="list-batch-group">
+          <button className={`ghost ${order === 'order' ? 'is-active' : ''}`} onClick={() => setOrder('order')}>顺序</button>
+          <button className={`ghost ${order === 'random' ? 'is-active' : ''}`} onClick={() => setOrder('random')}>随机</button>
+        </div>
+        <button className="primary" onClick={autoSelect}>自动勾选</button>
       </div>
 
       {warnings.length > 0 && (

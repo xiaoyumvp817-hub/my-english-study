@@ -7,6 +7,7 @@ import SelectionReview from './components/SelectionReview'
 import GameScreen from './components/GameScreen'
 import WrongbookScreen from './components/WrongbookScreen'
 import ReviewSession from './components/ReviewSession'
+import ReviewList from './components/ReviewList'
 import StudySummary from './components/StudySummary'
 import Confetti from './components/Confetti'
 import AmbientBackground from './components/AmbientBackground'
@@ -38,7 +39,7 @@ import { GiPerson, GiThreeFriends } from 'react-icons/gi'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import './App.css'
 
-type View = 'library' | 'name' | 'list' | 'play' | 'wrongbook' | 'review' | 'study' | 'achievements' | 'auth' | 'friends' | 'challenge' | 'challengeFriend' | 'challengeCreate'
+type View = 'library' | 'name' | 'list' | 'play' | 'wrongbook' | 'review' | 'reviewList' | 'study' | 'achievements' | 'auth' | 'friends' | 'challenge' | 'challengeFriend' | 'challengeCreate'
 
 const supabaseClient = createSupabaseClient()
 const api: CloudApi | null = supabaseClient ? createCloudApi(supabaseClient) : null
@@ -61,6 +62,7 @@ function App() {
   const [entries, setEntries] = useState<WrongEntry[]>(() => loadEntries())
   const [stats, setStats] = useState<Stats>(() => loadStats())
   const [reviewEntries, setReviewEntries] = useState<WrongEntry[]>([])
+  const [reviewReturn, setReviewReturn] = useState<'wrongbook' | 'reviewList'>('wrongbook')
   const [showSummary, setShowSummary] = useState(false)
   const [learned, setLearned] = useState<string[]>(() => loadLearned())
   const [session, setSession] = useState<StudySession | null>(null)
@@ -168,11 +170,24 @@ function App() {
     setEntries((prev) => wrongs.reduce((acc, w) => recordWrong(acc, { en: item.en, zh: item.zh, word: w.word, wordIndex: w.wordIndex }, now), prev))
   }
   function handleStartReview() {
+    setReviewReturn('wrongbook')
     setReviewEntries(dueEntries(entries, Date.now()))
     setView('review')
   }
   function handlePractice(entry: WrongEntry) {
+    setReviewReturn('wrongbook')
     setReviewEntries([entry])
+    setView('review')
+  }
+  function handleOpenReviewList() {
+    setView('reviewList')
+  }
+  function handleReviewListBack() {
+    setView('library')
+  }
+  function handleStartReviewList(listEntries: WrongEntry[]) {
+    setReviewReturn('reviewList')
+    setReviewEntries(listEntries)
     setView('review')
   }
   function handleAnswer(key: string, type: QuizType, q: number): number {
@@ -407,7 +422,9 @@ function App() {
   } else if (view === 'wrongbook') {
     screen = <WrongbookScreen entries={entries} stats={stats} streak={streak} onBack={goLibrary} onStartReview={handleStartReview} onPractice={handlePractice} onClear={handleClear} />
   } else if (view === 'review') {
-    screen = <ReviewSession entries={reviewEntries} onAnswer={handleAnswer} onBack={() => setView('wrongbook')} />
+    screen = <ReviewSession entries={reviewEntries} onAnswer={handleAnswer} onBack={() => setView(reviewReturn)} backLabel={reviewReturn === 'reviewList' ? '返回复习列表' : '返回错题本'} />
+  } else if (view === 'reviewList') {
+    screen = <ReviewList entries={entries} onBack={handleReviewListBack} onStartReview={handleStartReviewList} />
   } else if (view === 'achievements') {
     screen = (
       <AchievementsScreen
@@ -493,7 +510,7 @@ function App() {
           onOpen={() => setView('achievements')}
         />
         <TemplateLibrary templates={templates} sort={sort} onSortChange={setSort} onParsed={handleParsed}
-          onOpenTemplate={handleOpenTemplate} onRename={handleRename} onDelete={handleDelete} onOpenWrongbook={() => setView('wrongbook')} />
+          onOpenTemplate={handleOpenTemplate} onRename={handleRename} onDelete={handleDelete} onOpenWrongbook={() => setView('wrongbook')} onOpenReviewList={handleOpenReviewList} />
       </>
     )
   }
