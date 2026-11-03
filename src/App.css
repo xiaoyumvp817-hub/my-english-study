@@ -338,6 +338,13 @@
   color: var(--ink);
 }
 
+.list-batch-hint {
+  margin: -8px 0 16px;
+  font-size: 12px;
+  color: var(--ink);
+  opacity: 0.55;
+}
+
 /* 全局「需复习」页：句子级卡片（纵向排布，错词横排于句下） */
 .review-card {
   flex-direction: column;

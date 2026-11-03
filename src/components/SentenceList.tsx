@@ -4,7 +4,7 @@ import { GiCrossedSwords } from 'react-icons/gi'
 import type { WrongEntry } from '../lib/wrongbook'
 import { sentenceStatus } from '../lib/learned'
 import { pickBatch } from '../lib/batchSelect'
-import type { BatchFilter, BatchOrder } from '../lib/batchSelect'
+import type { BatchOrder } from '../lib/batchSelect'
 import CoverImage from './CoverImage'
 
 interface Props {
@@ -24,11 +24,10 @@ export default function SentenceList({ templateName, items, warnings, learned, e
   const learnedCount = statuses.filter((s) => s === 'learned').length
   const reviewCount = statuses.filter((s) => s === 'review').length
   const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set())
-  const [filter, setFilter] = useState<BatchFilter>('review')
   const [count, setCount] = useState(10)
   const [order, setOrder] = useState<BatchOrder>('order')
 
-  const FILTER_LABEL: Record<BatchFilter, string> = { review: '需复习', new: '未学习', all: '全部' }
+  const unlearnedCount = statuses.filter((s) => s !== 'learned').length
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -45,7 +44,7 @@ export default function SentenceList({ templateName, items, warnings, learned, e
     setSelected(new Set())
   }
   function autoSelect() {
-    setSelected(new Set(pickBatch(items, statuses, filter, count, order)))
+    setSelected(new Set(pickBatch(items, statuses, count, order)))
   }
   function startStudy() {
     onStartStudy(items.filter((item) => selected.has(item.id)))
@@ -79,14 +78,6 @@ export default function SentenceList({ templateName, items, warnings, learned, e
       </div>
 
       <div className="list-batch">
-        <span className="list-batch-label">状态</span>
-        <div className="list-batch-group">
-          {(['review', 'new', 'all'] as BatchFilter[]).map((f) => (
-            <button key={f} className={`ghost ${filter === f ? 'is-active' : ''}`} onClick={() => setFilter(f)}>
-              {FILTER_LABEL[f]}
-            </button>
-          ))}
-        </div>
         <span className="list-batch-label">每次</span>
         <input
           className="list-batch-count"
@@ -103,6 +94,7 @@ export default function SentenceList({ templateName, items, warnings, learned, e
         </div>
         <button className="primary" onClick={autoSelect}>自动勾选</button>
       </div>
+      <p className="list-batch-hint">未学会 {unlearnedCount} 句 · 自动勾选会跳过已学会的句子</p>
 
       {warnings.length > 0 && (
         <div className="warnings" role="alert">
