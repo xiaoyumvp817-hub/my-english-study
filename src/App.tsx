@@ -195,7 +195,12 @@ function App() {
     const target = entries.find((e) => e.key === key)
     if (!target) return 0
     const xp = xpForAnswer(type, q)
-    setEntries((prev) => prev.map((e) => (e.key === key ? reviewEntry(e, q, now) : e)))
+    // 复习通过（q>=3）→ 从错题本删除；未通过 → 更新 FSRS 并保留，继续复习。
+    setEntries((prev) =>
+      q >= 3
+        ? prev.filter((e) => e.key !== key)
+        : prev.map((e) => (e.key === key ? reviewEntry(e, q, now) : e)),
+    )
     setStats((prev) => applyReviewAnswer(prev, xp, q >= 3, dateKey(new Date(now))))
     return xp
   }
