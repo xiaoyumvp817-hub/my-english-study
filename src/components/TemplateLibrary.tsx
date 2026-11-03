@@ -106,6 +106,7 @@ export default function TemplateLibrary({
                           type="text"
                           value={draft}
                           autoFocus
+                          autoComplete="off"
                           onChange={(e) => setDraft(e.target.value)}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') confirmRename()

@@ -118,12 +118,13 @@ export default function ReviewDrill({ entry, onResult }: Props) {
           <p className="quiz-prompt">{entry.zh || '（无中文释义）'}</p>
           <span className="spell-blanks" aria-hidden="true">{letters.map(() => '_').join(' ')}</span>
           {revealed && <span className="quiz-word">{word}</span>}
-          <form onSubmit={submitSpell} noValidate>
+          <form onSubmit={submitSpell} noValidate autoComplete="off">
             <input
               className={`word-input${spellWrong ? ' is-wrong' : ''}${spellSolved ? ' is-correct' : ''}`}
               type="text"
               value={typed}
               size={Math.max(word.length, 2)}
+              autoComplete="off"
               autoCapitalize="off"
               autoCorrect="off"
               spellCheck={false}

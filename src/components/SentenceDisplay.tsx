@@ -65,6 +65,7 @@ export default function SentenceDisplay({ tokens, answers, checked, results, rev
             value={value}
             size={Math.max(target.length, 2)}
             style={{ marginLeft: spaceBefore(tokens, tokenIndex) ? '0.4em' : undefined }}
+            autoComplete="off"
             autoCapitalize="off"
             autoCorrect="off"
             spellCheck={false}

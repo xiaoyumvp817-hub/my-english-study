@@ -34,6 +34,7 @@ export default function NamePrompt({ fileName, count, onConfirm, onCancel }: Pro
           type="text"
           value={name}
           autoFocus
+          autoComplete="off"
           placeholder="例如：7年级unit1"
           onChange={(e) => setName(e.target.value)}
         />
