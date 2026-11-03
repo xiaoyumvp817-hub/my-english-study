@@ -90,17 +90,20 @@ describe('loadStats', () => {
 })
 
 describe('applyReviewAnswer', () => {
-  it('counts a correct review answer into totals', () => {
+  it('counts a correct review answer into review totals, not learned sentences', () => {
     const s = applyReviewAnswer(emptyStats(), 10, true, '2026-09-28')
-    expect(s.totalLearned).toBe(1)
-    expect(s.dailyHistory['2026-09-28']).toBe(1)
+    expect(s.totalLearned).toBe(0)
+    expect(s.dailyHistory).toEqual({})
+    expect(s.totalReviews).toBe(1)
+    expect(s.dailyReviews['2026-09-28']).toBe(1)
     expect(s.xp).toBe(10)
   })
 
   it('does not count a wrong review answer but still refreshes the streak', () => {
     const s = applyReviewAnswer(emptyStats(), 5, false, '2026-09-28')
     expect(s.totalLearned).toBe(0)
-    expect(s.dailyHistory['2026-09-28']).toBe(0)
+    expect(s.totalReviews).toBe(0)
+    expect(s.dailyReviews).toEqual({})
     expect(s.streakDays).toBe(1)
     expect(s.lastStudyDate).toBe('2026-09-28')
     expect(s.xp).toBe(5)

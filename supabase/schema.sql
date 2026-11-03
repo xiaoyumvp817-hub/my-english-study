@@ -42,6 +42,8 @@ create table public.stats (
   total_learned int not null default 0,
   last_study_date text not null default '',
   daily_history jsonb not null default '{}',
+  total_reviews int not null default 0,
+  daily_reviews jsonb not null default '{}',
   updated_at timestamptz not null default now()
 );
 

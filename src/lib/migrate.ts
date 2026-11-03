@@ -22,12 +22,18 @@ export function mergeStats(local: Stats, cloud: Stats): Stats {
   for (const [day, n] of Object.entries(local.dailyHistory)) {
     dailyHistory[day] = Math.max(dailyHistory[day] ?? 0, n)
   }
+  const dailyReviews = { ...cloud.dailyReviews }
+  for (const [day, n] of Object.entries(local.dailyReviews)) {
+    dailyReviews[day] = Math.max(dailyReviews[day] ?? 0, n)
+  }
   return {
     xp: Math.max(local.xp, cloud.xp),
     streakDays: Math.max(local.streakDays, cloud.streakDays),
     totalLearned: Math.max(local.totalLearned, cloud.totalLearned),
+    totalReviews: Math.max(local.totalReviews, cloud.totalReviews),
     lastStudyDate: local.lastStudyDate > cloud.lastStudyDate ? local.lastStudyDate : cloud.lastStudyDate,
     dailyHistory,
+    dailyReviews,
   }
 }
 

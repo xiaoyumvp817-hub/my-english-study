@@ -22,13 +22,15 @@ describe('mergeTemplates', () => {
 })
 
 describe('mergeStats', () => {
-  it('逐项取较大值，daily_history 按天取大', () => {
-    const local = { ...emptyStats(), xp: 10, totalLearned: 5, dailyHistory: { '2026-10-09': 2 } }
-    const cloud = { ...emptyStats(), xp: 8, totalLearned: 9, dailyHistory: { '2026-10-09': 3, '2026-10-08': 1 } }
+  it('逐项取较大值，daily_history/daily_reviews 按天取大', () => {
+    const local = { ...emptyStats(), xp: 10, totalLearned: 5, totalReviews: 4, dailyHistory: { '2026-10-09': 2 }, dailyReviews: { '2026-10-09': 2 } }
+    const cloud = { ...emptyStats(), xp: 8, totalLearned: 9, totalReviews: 3, dailyHistory: { '2026-10-09': 3, '2026-10-08': 1 }, dailyReviews: { '2026-10-09': 1, '2026-10-08': 2 } }
     const m = mergeStats(local, cloud)
     expect(m.xp).toBe(10)
     expect(m.totalLearned).toBe(9)
+    expect(m.totalReviews).toBe(4)
     expect(m.dailyHistory).toEqual({ '2026-10-09': 3, '2026-10-08': 1 })
+    expect(m.dailyReviews).toEqual({ '2026-10-09': 2, '2026-10-08': 2 })
   })
 })
 

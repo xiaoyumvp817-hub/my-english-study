@@ -16,7 +16,7 @@ import AchievementsScreen from './components/AchievementsScreen'
 import type { WrongWord } from './components/SentenceQuiz'
 import { loadTemplates, saveTemplates, makeTemplate } from './lib/templates'
 import type { Template, TemplateSort } from './lib/templates'
-import { loadEntries, saveEntries, recordWrong, reviewEntry, dueEntries } from './lib/wrongbook'
+import { loadEntries, saveEntries, recordWrong, reviewEntry, dueEntries, isMastered } from './lib/wrongbook'
 import type { WrongEntry } from './lib/wrongbook'
 import { loadStats, saveStats, recordStudy, applyReviewAnswer, dateKey, levelForXp, backfillDay } from './lib/stats'
 import type { Stats } from './lib/stats'
@@ -200,6 +200,7 @@ function App() {
     return xp
   }
   function handleClear() { setEntries([]) }
+  function handleClearMastered() { setEntries((prev) => prev.filter((e) => !isMastered(e))) }
 
   function handleSetGoal(goal: number) {
     setMotivation((m) => ({ ...m, goalPerDay: goal }))
@@ -420,7 +421,7 @@ function App() {
   } else if (view === 'list' && currentTemplate) {
     screen = <SentenceList templateName={currentTemplate.name} items={currentTemplate.items} warnings={currentTemplate.warnings} learned={new Set(learned)} entries={entries} onSelect={handleSelect} onStartStudy={handleStartStudy} onBack={goLibrary} onChallenge={api ? handleChallengeFriends : undefined} />
   } else if (view === 'wrongbook') {
-    screen = <WrongbookScreen entries={entries} stats={stats} streak={streak} onBack={goLibrary} onStartReview={handleStartReview} onPractice={handlePractice} onClear={handleClear} />
+    screen = <WrongbookScreen entries={entries} stats={stats} streak={streak} onBack={goLibrary} onStartReview={handleStartReview} onPractice={handlePractice} onClear={handleClear} onClearMastered={handleClearMastered} />
   } else if (view === 'review') {
     screen = <ReviewSession entries={reviewEntries} onAnswer={handleAnswer} onBack={() => setView(reviewReturn)} backLabel={reviewReturn === 'reviewList' ? '返回复习列表' : '返回错题本'} />
   } else if (view === 'reviewList') {

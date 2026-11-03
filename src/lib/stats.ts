@@ -2,13 +2,17 @@ export interface Stats {
   xp: number
   streakDays: number
   lastStudyDate: string
-  /** 累计学习词条数（练习完成一句 +1，复习答对一题 +1）。 */
+  /** 累计学习句数（学会一句 +1，去重；复习不计入）。 */
   totalLearned: number
   dailyHistory: Record<string, number>
+  /** 累计复习答对数（错题本复习答对一题 +1）。 */
+  totalReviews: number
+  /** 每日复习答对数。 */
+  dailyReviews: Record<string, number>
 }
 
 export function emptyStats(): Stats {
-  return { xp: 0, streakDays: 0, lastStudyDate: '', totalLearned: 0, dailyHistory: {} }
+  return { xp: 0, streakDays: 0, lastStudyDate: '', totalLearned: 0, dailyHistory: {}, totalReviews: 0, dailyReviews: {} }
 }
 
 export function levelForXp(xp: number): number {
@@ -40,18 +44,27 @@ function isYesterday(prev: string, today: string): boolean {
   return new Date(`${today}T00:00:00`).getTime() - new Date(`${prev}T00:00:00`).getTime() === 24 * 60 * 60 * 1000
 }
 
-export function recordStudy(stats: Stats, today: string, count = 1): Stats {
-  const dailyHistory = { ...stats.dailyHistory, [today]: (stats.dailyHistory[today] ?? 0) + count }
-  if (stats.lastStudyDate === today) {
-    return { ...stats, totalLearned: stats.totalLearned + count, dailyHistory }
-  }
+/** 刷新「今天学过」：更新 lastStudyDate 与连续学习天数（不改变学习/复习计数）。 */
+function markActive(stats: Stats, today: string): Stats {
+  if (stats.lastStudyDate === today) return stats
   const streakDays = isYesterday(stats.lastStudyDate, today) ? stats.streakDays + 1 : 1
-  return { ...stats, streakDays, lastStudyDate: today, totalLearned: stats.totalLearned + count, dailyHistory }
+  return { ...stats, streakDays, lastStudyDate: today }
 }
 
-/** 复习答题后更新统计：答对计入学习数量 +1，答错不计入；两者都加 XP 并刷新连续学习。 */
+export function recordStudy(stats: Stats, today: string, count = 1): Stats {
+  const dailyHistory = { ...stats.dailyHistory, [today]: (stats.dailyHistory[today] ?? 0) + count }
+  return { ...markActive(stats, today), totalLearned: stats.totalLearned + count, dailyHistory }
+}
+
+/** 复习答题：加 XP、刷新连续学习；答对计入复习数（不计入学习句数）。 */
 export function applyReviewAnswer(stats: Stats, xp: number, correct: boolean, today: string): Stats {
-  return recordStudy(addXp(stats, xp), today, correct ? 1 : 0)
+  const dailyReviews = correct
+    ? { ...stats.dailyReviews, [today]: (stats.dailyReviews[today] ?? 0) + 1 }
+    : stats.dailyReviews
+  return markActive(
+    { ...addXp(stats, xp), totalReviews: stats.totalReviews + (correct ? 1 : 0), dailyReviews },
+    today,
+  )
 }
 
 /** 补签卡回填：把某一天直接记为达标（dailyHistory[day] = count）。 */
@@ -73,6 +86,8 @@ export function loadStats(): Stats {
       ...p,
       totalLearned: p.totalLearned ?? legacy.reviewCount ?? 0,
       dailyHistory: p.dailyHistory ?? {},
+      totalReviews: p.totalReviews ?? 0,
+      dailyReviews: p.dailyReviews ?? {},
     }
   } catch {
     return emptyStats()

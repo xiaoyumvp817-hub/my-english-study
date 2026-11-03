@@ -44,6 +44,8 @@ export interface StatsRow {
   total_learned: number
   last_study_date: string
   daily_history: unknown
+  total_reviews: number
+  daily_reviews: unknown
   updated_at?: string
 }
 export interface LearnedRow {
@@ -126,10 +128,10 @@ export function entryFromRow(r: WrongEntryRow): WrongEntry {
 }
 
 export function statsToRow(userId: string, s: Stats): StatsRow {
-  return { user_id: userId, xp: s.xp, streak_days: s.streakDays, total_learned: s.totalLearned, last_study_date: s.lastStudyDate, daily_history: s.dailyHistory }
+  return { user_id: userId, xp: s.xp, streak_days: s.streakDays, total_learned: s.totalLearned, last_study_date: s.lastStudyDate, daily_history: s.dailyHistory, total_reviews: s.totalReviews, daily_reviews: s.dailyReviews }
 }
 export function statsFromRow(r: StatsRow): Stats {
-  return { xp: r.xp, streakDays: r.streak_days, totalLearned: r.total_learned, lastStudyDate: r.last_study_date, dailyHistory: asRecord(r.daily_history) }
+  return { xp: r.xp, streakDays: r.streak_days, totalLearned: r.total_learned, lastStudyDate: r.last_study_date, dailyHistory: asRecord(r.daily_history), totalReviews: r.total_reviews ?? 0, dailyReviews: asRecord(r.daily_reviews) }
 }
 
 export function learnedToRow(userId: string, items: string[]): LearnedRow {

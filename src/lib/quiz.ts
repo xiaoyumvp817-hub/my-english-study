@@ -73,11 +73,6 @@ export function makePhraseChoices(target: string, pool: string[], count = 4): st
   return shuffle(result.slice(0, count))
 }
 
-/** Phase 1 仅随机出 choice / flashcard（翻卡 60%）。 */
-export function pickType(rng: () => number = Math.random): QuizType {
-  return rng() < 0.6 ? 'flashcard' : 'choice'
-}
-
 /** 把句子里的目标词（首次出现，忽略大小写）替换为下划线空白。 */
 export function blankSentence(sentence: string, word: string): string {
   const idx = sentence.toLowerCase().indexOf(word.toLowerCase())

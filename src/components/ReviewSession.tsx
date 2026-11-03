@@ -1,9 +1,7 @@
 import { useState } from 'react'
 import type { WrongEntry } from '../lib/wrongbook'
 import type { QuizType } from '../lib/quiz'
-import { pickType } from '../lib/quiz'
-import Choice from './quiz/Choice'
-import Flashcard from './quiz/Flashcard'
+import ReviewDrill from './quiz/ReviewDrill'
 
 interface Props {
   entries: WrongEntry[]
@@ -15,7 +13,6 @@ interface Props {
 export default function ReviewSession({ entries, onAnswer, onBack, backLabel = '返回错题本' }: Props) {
   const [index, setIndex] = useState(0)
   const [finished, setFinished] = useState(false)
-  const [types] = useState<QuizType[]>(() => entries.map(() => pickType()))
   const [totalXp, setTotalXp] = useState(0)
   const [lastGain, setLastGain] = useState<number | null>(null)
 
@@ -49,10 +46,9 @@ export default function ReviewSession({ entries, onAnswer, onBack, backLabel = '
   }
 
   const entry = entries[index]
-  const type = types[index]
 
   function handleResult(q: number) {
-    const xp = onAnswer(entry.key, type, q)
+    const xp = onAnswer(entry.key, 'fillblank', q)
     setTotalXp((x) => x + xp)
     setLastGain(xp)
     if (index === entries.length - 1) setFinished(true)
@@ -68,9 +64,7 @@ export default function ReviewSession({ entries, onAnswer, onBack, backLabel = '
 
       {lastGain !== null && <p className="xp-toast" role="status">+{lastGain} XP</p>}
 
-      {type === 'choice'
-        ? <Choice entry={entry} onResult={handleResult} />
-        : <Flashcard entry={entry} onResult={handleResult} />}
+      <ReviewDrill key={entry.key} entry={entry} onResult={handleResult} />
     </div>
   )
 }

@@ -30,7 +30,7 @@ describe('entry 映射', () => {
 
 describe('stats 映射', () => {
   it('往返不变', () => {
-    const s = { ...emptyStats(), xp: 10, totalLearned: 3, dailyHistory: { '2026-10-09': 2 } }
+    const s = { ...emptyStats(), xp: 10, totalLearned: 3, totalReviews: 2, dailyHistory: { '2026-10-09': 2 }, dailyReviews: { '2026-10-09': 1 } }
     expect(statsFromRow(statsToRow(USER, s))).toEqual(s)
   })
 })

@@ -694,6 +694,42 @@
   margin-top: 20px;
 }
 
+.group-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--muted);
+  margin: 18px 0 8px;
+}
+
+.group-title:first-child {
+  margin-top: 0;
+}
+
+.mastered-list .entry-card {
+  opacity: 0.62;
+}
+
+.mastered-list .entry-card:hover,
+.mastered-list .entry-card:focus-visible {
+  opacity: 1;
+}
+
+.drill-step {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: 0 0 14px;
+}
+
+.spell-blanks {
+  display: block;
+  font-family: var(--font-serif);
+  font-size: 2rem;
+  letter-spacing: 0.32em;
+  color: var(--muted);
+  margin: 6px 0 12px;
+  user-select: none;
+}
+
 /* ---------- Template library ---------- */
 
 .library-section {

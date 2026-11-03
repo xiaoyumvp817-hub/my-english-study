@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { makeChoices, makePhraseChoices, pickType, xpForAnswer, blankSentence } from './quiz'
+import { makeChoices, makePhraseChoices, xpForAnswer, blankSentence } from './quiz'
 import { normalize } from './tokenize'
 
 describe('makeChoices', () => {
@@ -35,13 +35,6 @@ describe('makePhraseChoices', () => {
     const choices = makePhraseChoices('collect', ['Collect', 'collect', 'run', 'jump'])
     expect(choices).toHaveLength(4)
     expect(choices.filter((c) => normalize(c) === 'collect')).toHaveLength(1)
-  })
-})
-
-describe('pickType', () => {
-  it('picks flashcard for low rng and choice for high rng', () => {
-    expect(pickType(() => 0)).toBe('flashcard')
-    expect(pickType(() => 0.99)).toBe('choice')
   })
 })
 
