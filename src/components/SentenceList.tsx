@@ -130,6 +130,7 @@ export default function SentenceList({ templateName, items, warnings, learned, e
                   {item.image && <CoverImage src={item.image} className="sentence-thumb" />}
                   <span className="sentence-body">
                     <span className="sentence-en">{item.en}</span>
+                    {item.phonetic && <span className="sentence-phonetic">{item.phonetic}</span>}
                     <span className="sentence-zh">{item.zh || '（无中文释义）'}</span>
                   </span>
                   {status !== 'new' && (

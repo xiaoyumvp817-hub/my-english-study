@@ -41,7 +41,7 @@ export default function FileUploader({ onParsed }: Props) {
         }
         const result = parseExcel(reader.result)
         if (result.items.length === 0) {
-          setError('Excel 中没有找到有效内容，请检查「英文 | 中文释义」两列格式')
+          setError('Excel 中没有找到有效内容，请检查「英文 | 音标 | 中文释义」格式')
           return
         }
         setError(null)
@@ -100,7 +100,8 @@ export default function FileUploader({ onParsed }: Props) {
         <p className="format-title">模板格式</p>
         <p className="format-note">
           <strong>Excel 模板（推荐）</strong>：第一列 <code>英文</code>，第二列{' '}
-          <code>中文释义</code>。先点上面的「下载模板」，填写后保存再上传即可。
+          <code>音标</code>（可选，单词填、短语留空），第三列 <code>中文释义</code>。
+          先点上面的「下载模板」，填写后保存再上传即可。
         </p>
         <p className="format-note">
           <strong>文本 .txt</strong>：每行一句，用 <code>|</code> 分隔英文与中文，例如{' '}

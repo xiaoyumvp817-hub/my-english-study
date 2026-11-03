@@ -167,7 +167,7 @@ function App() {
     const item = currentTemplate.items[currentIndex]
     if (!item) return
     const now = Date.now()
-    setEntries((prev) => wrongs.reduce((acc, w) => recordWrong(acc, { en: item.en, zh: item.zh, word: w.word, wordIndex: w.wordIndex }, now), prev))
+    setEntries((prev) => wrongs.reduce((acc, w) => recordWrong(acc, { en: item.en, zh: item.zh, word: w.word, wordIndex: w.wordIndex, phonetic: item.phonetic }, now), prev))
   }
   function handleStartReview() {
     setReviewReturn('wrongbook')
@@ -343,7 +343,7 @@ function App() {
   }
   function handleSelectWrong(item: TemplateItem) {
     const now = Date.now()
-    setEntries((prev) => recordWrong(prev, { en: item.en, zh: item.zh, word: item.en, wordIndex: 0 }, now))
+    setEntries((prev) => recordWrong(prev, { en: item.en, zh: item.zh, word: item.en, wordIndex: 0, phonetic: item.phonetic }, now))
   }
   function handleSelectNext() {
     setSession((s) => (s ? { ...s, index: s.index + 1 } : s))
@@ -373,7 +373,7 @@ function App() {
     const item = session.items[session.index]
     if (!item) return
     const now = Date.now()
-    setEntries((prev) => wrongs.reduce((acc, w) => recordWrong(acc, { en: item.en, zh: item.zh, word: w.word, wordIndex: w.wordIndex }, now), prev))
+    setEntries((prev) => wrongs.reduce((acc, w) => recordWrong(acc, { en: item.en, zh: item.zh, word: w.word, wordIndex: w.wordIndex, phonetic: item.phonetic }, now), prev))
   }
   function handleSessionCompleted() {
     if (!session) return

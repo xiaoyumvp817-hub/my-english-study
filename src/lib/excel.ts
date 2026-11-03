@@ -1,18 +1,18 @@
 import * as XLSX from 'xlsx'
 import type { TemplateItem, ParseResult } from '../types'
 
-const HEADER: [string, string] = ['英文', '中文释义']
+const HEADER: [string, string, string] = ['英文', '音标', '中文释义']
 
 /** Builds the template workbook: a header row plus a few example rows. */
 export function buildTemplateWorkbook(): XLSX.WorkBook {
   const rows: (string | number)[][] = [
-    [HEADER[0], HEADER[1]],
-    ['Hello, world!', '你好，世界！'],
-    ['I love learning English.', '我喜欢学英语。'],
-    ['Practice makes perfect.', '熟能生巧。'],
+    [HEADER[0], HEADER[1], HEADER[2]],
+    ['apple', '/ˈæpl/', '苹果'],
+    ['a quarter of', '', '四分之一'],
+    ['Practice makes perfect.', '', '熟能生巧。'],
   ]
   const ws = XLSX.utils.aoa_to_sheet(rows)
-  ws['!cols'] = [{ wch: 34 }, { wch: 22 }]
+  ws['!cols'] = [{ wch: 34 }, { wch: 14 }, { wch: 22 }]
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, '模板')
   return wb
@@ -31,7 +31,7 @@ const HAS_CJK = /[一-鿿]/
 
 /**
  * Parses an .xlsx / .xls buffer into items.
- * Column A = English, column B = Chinese translation.
+ * Column A = English, column B = phonetic (optional), column C = Chinese, column D = image (optional).
  */
 export function parseExcel(buffer: ArrayBuffer | Uint8Array): ParseResult {
   const items: TemplateItem[] = []
@@ -47,19 +47,20 @@ export function parseExcel(buffer: ArrayBuffer | Uint8Array): ParseResult {
   rows.forEach((row, idx) => {
     const cells = row.map((c) => (c == null ? '' : String(c).trim()))
     const en = cells[0] ?? ''
-    const zh = cells[1] ?? ''
-    const image = cells[2] || undefined
+    const phonetic = cells[1] || undefined
+    const zh = cells[2] ?? ''
+    const image = cells[3] || undefined
 
     if (!en && !zh) return
     if (isHeaderRow(en)) return
 
     if (en && zh) {
-      items.push({ id: `xlsx-${seq++}`, en, zh, image })
+      items.push({ id: `xlsx-${seq++}`, en, zh, phonetic, image })
     } else if (en && !zh) {
       if (HAS_CJK.test(en)) {
         warnings.push(`第 ${idx + 1} 行缺少英文，已跳过`)
       } else {
-        items.push({ id: `xlsx-${seq++}`, en, zh: '', image })
+        items.push({ id: `xlsx-${seq++}`, en, zh: '', phonetic, image })
         warnings.push(`第 ${idx + 1} 行缺少中文释义`)
       }
     } else {

@@ -8,6 +8,8 @@ export interface WrongEntry extends FsrsState {
   zh: string
   word: string
   wordIndex: number
+  /** Phonetic (IPA) of the word, present only for single-word entries. */
+  phonetic?: string
   addedAt: number
 }
 
@@ -36,7 +38,7 @@ function keyFor(en: string, wordIndex: number): string {
 
 export function recordWrong(
   entries: WrongEntry[],
-  input: { en: string; zh: string; word: string; wordIndex: number },
+  input: { en: string; zh: string; word: string; wordIndex: number; phonetic?: string },
   now: number,
 ): WrongEntry[] {
   const key = keyFor(input.en, input.wordIndex)
@@ -46,6 +48,8 @@ export function recordWrong(
     zh: input.zh,
     word: input.word,
     wordIndex: input.wordIndex,
+    // Only single-word entries carry a phonetic; phrase sub-words don't.
+    phonetic: input.word === input.en ? input.phonetic : undefined,
     addedAt: now,
     ...newFsrsState(now + DAY_MS),
   }

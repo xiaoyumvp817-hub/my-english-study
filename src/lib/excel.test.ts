@@ -10,17 +10,28 @@ function toBuffer(rows: unknown[][]): ArrayBuffer {
 }
 
 describe('parseExcel', () => {
-  it('parses two-column rows and skips the header', () => {
+  it('parses three-column rows (英文|音标|中文释义) and skips the header', () => {
     const buffer = toBuffer([
-      ['英文', '中文释义'],
-      ['Hello', '你好'],
-      ['World', '世界'],
+      ['英文', '音标', '中文释义'],
+      ['Hello', '/həˈloʊ/', '你好'],
+      ['World', '/wɜːrld/', '世界'],
     ])
     const { items, warnings } = parseExcel(buffer)
     expect(items).toHaveLength(2)
-    expect(items[0]).toMatchObject({ en: 'Hello', zh: '你好' })
-    expect(items[1]).toMatchObject({ en: 'World', zh: '世界' })
+    expect(items[0]).toMatchObject({ en: 'Hello', phonetic: '/həˈloʊ/', zh: '你好' })
+    expect(items[1]).toMatchObject({ en: 'World', phonetic: '/wɜːrld/', zh: '世界' })
     expect(warnings).toHaveLength(0)
+  })
+
+  it('leaves phonetic undefined when the second column is empty', () => {
+    const buffer = toBuffer([
+      ['英文', '音标', '中文释义'],
+      ['a quarter of', '', '四分之一'],
+    ])
+    const { items } = parseExcel(buffer)
+    expect(items).toHaveLength(1)
+    expect(items[0].phonetic).toBeUndefined()
+    expect(items[0].zh).toBe('四分之一')
   })
 
   it('warns on a row missing Chinese', () => {
@@ -38,11 +49,11 @@ describe('parseExcel', () => {
     expect(warnings).toHaveLength(1)
   })
 
-  it('reads the optional third "图片" column into image', () => {
+  it('reads the optional fourth "图片" column into image', () => {
     const buffer = toBuffer([
-      ['英文', '中文释义', '图片'],
-      ['Hello', '你好', 'images/u5-001.jpg'],
-      ['World', '世界'],
+      ['英文', '音标', '中文释义', '图片'],
+      ['Hello', '/həˈloʊ/', '你好', 'images/u5-001.jpg'],
+      ['World', '/wɜːrld/', '世界'],
     ])
     const { items } = parseExcel(buffer)
     expect(items[0].image).toBe('images/u5-001.jpg')
@@ -51,10 +62,10 @@ describe('parseExcel', () => {
 })
 
 describe('buildTemplateWorkbook', () => {
-  it('has a header row with English first', () => {
+  it('has a header row with English, phonetic and Chinese', () => {
     const wb = buildTemplateWorkbook()
     const ws = wb.Sheets[wb.SheetNames[0]]
     const rows = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1 })
-    expect(rows[0]).toEqual(['英文', '中文释义'])
+    expect(rows[0]).toEqual(['英文', '音标', '中文释义'])
   })
 })

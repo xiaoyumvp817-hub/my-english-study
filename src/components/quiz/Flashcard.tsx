@@ -34,6 +34,7 @@ export default function Flashcard({ entry, onResult }: Props) {
           </div>
           <div className="flip-face flip-back">
             <span className="quiz-word">{entry.word}</span>
+            {entry.phonetic && <span className="flashcard-phonetic">{entry.phonetic}</span>}
             <p className="quiz-sentence">{entry.en}</p>
           </div>
         </div>

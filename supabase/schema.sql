@@ -23,6 +23,7 @@ create table public.wrong_entries (
   zh text not null,
   word text not null,
   word_index int not null,
+  phonetic text,
   added_at bigint not null,
   stability double precision not null default 0,
   difficulty double precision not null default 5,

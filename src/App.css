@@ -222,6 +222,14 @@
 .sentence-en {
   font-family: var(--font-serif);
   font-size: 1.15rem;
+  overflow-wrap: anywhere;
+}
+
+.sentence-phonetic {
+  font-family: var(--font-serif);
+  color: var(--muted);
+  font-size: 0.92rem;
+  opacity: 0.85;
 }
 
 .sentence-zh {
@@ -423,6 +431,14 @@
   margin: 0 0 12px;
 }
 
+.quiz-phonetic {
+  font-family: var(--font-serif);
+  text-align: center;
+  color: var(--muted);
+  font-size: 1.05rem;
+  margin: -4px 0 10px;
+}
+
 .item-image {
   display: block;
   width: 100%;
@@ -468,7 +484,8 @@
 }
 
 .word-input {
-  flex-shrink: 0;
+  flex-shrink: 1;
+  max-width: 100%;
   font-family: var(--font-serif);
   font-size: 1.45rem;
   text-align: center;
@@ -636,11 +653,13 @@
   font-family: var(--font-serif);
   font-size: 1.25rem;
   font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .entry-en {
   font-family: var(--font-serif);
   font-size: 0.95rem;
+  overflow-wrap: anywhere;
 }
 
 .entry-zh {
@@ -905,6 +924,14 @@
   font-size: 1.8rem;
   font-weight: 700;
   margin: 8px 0;
+}
+
+.flashcard-phonetic {
+  display: block;
+  font-family: var(--font-serif);
+  color: var(--muted);
+  font-size: 1.05rem;
+  margin: -4px 0 8px;
 }
 
 .quiz-options {
@@ -1791,6 +1818,85 @@
   border-radius: 10px;
   border: 1px solid var(--line);
   background: var(--surface);
+}
+
+/* ---------- Responsive: tablet & phone (≤768px) ---------- */
+
+@media (max-width: 768px) {
+  .app {
+    padding: 24px 16px 40px;
+  }
+
+  .list-head {
+    flex-wrap: wrap;
+  }
+
+  .list-head-actions {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .list-toolbar {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  .account-bar {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .game-top {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .title {
+    font-size: 1.6rem;
+  }
+
+  .game-card,
+  .quiz-card {
+    padding: 24px 20px 22px;
+  }
+
+  .translation {
+    font-size: 1.3rem;
+  }
+
+  .quiz-word {
+    font-size: 1.5rem;
+  }
+
+  .quiz-prompt {
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .stat-row {
+    gap: 8px;
+  }
+
+  .stat {
+    padding: 12px 10px;
+  }
+
+  .stat-num {
+    font-size: 1.35rem;
+  }
+
+  .ghost {
+    padding: 10px 14px;
+  }
+
+  .tab {
+    padding: 12px 0;
+  }
+
+  .speak {
+    padding: 10px 20px;
+  }
 }
 
 .challenge-error .result {

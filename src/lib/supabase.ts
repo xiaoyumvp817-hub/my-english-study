@@ -27,6 +27,7 @@ export interface WrongEntryRow {
   zh: string
   word: string
   word_index: number
+  phonetic: string | null
   added_at: number
   stability: number
   difficulty: number
@@ -110,6 +111,7 @@ export function templateFromRow(r: TemplatesRow): Template {
 export function entryToRow(userId: string, e: WrongEntry): WrongEntryRow {
   return {
     user_id: userId, key: e.key, en: e.en, zh: e.zh, word: e.word, word_index: e.wordIndex,
+    phonetic: e.phonetic ?? null,
     added_at: e.addedAt, stability: e.stability, difficulty: e.difficulty, state: e.state,
     due_at: e.dueAt, reviews: e.reviews, lapses: e.lapses, last_review_at: e.lastReviewAt,
   }
@@ -117,6 +119,7 @@ export function entryToRow(userId: string, e: WrongEntry): WrongEntryRow {
 export function entryFromRow(r: WrongEntryRow): WrongEntry {
   return {
     key: r.key, en: r.en, zh: r.zh, word: r.word, wordIndex: r.word_index,
+    phonetic: r.phonetic ?? undefined,
     addedAt: r.added_at, stability: r.stability, difficulty: r.difficulty, state: r.state,
     dueAt: r.due_at, reviews: r.reviews, lapses: r.lapses, lastReviewAt: r.last_review_at,
   }

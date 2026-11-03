@@ -144,6 +144,10 @@ export default function SentenceQuiz({ item, continueLabel, onComplete, onWrongW
             onChange={handleChange}
           />
 
+          {item.phonetic && (checked || revealed.some(Boolean)) && (
+            <p className="quiz-phonetic">{item.phonetic}</p>
+          )}
+
           {allCorrect ? (
             <p className="result success" role="status">🎉 全对！</p>
           ) : checked ? (

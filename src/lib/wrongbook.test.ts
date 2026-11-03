@@ -46,6 +46,14 @@ describe('recordWrong', () => {
     expect(second).toHaveLength(1)
     expect(second[0].addedAt).toBe(NOW)
   })
+
+  it('stores phonetic only for single-word entries, not phrase sub-words', () => {
+    const single = recordWrong([], { en: 'apple', zh: '苹果', word: 'apple', wordIndex: 0, phonetic: '/ˈæpl/' }, NOW)
+    expect(single[0].phonetic).toBe('/ˈæpl/')
+
+    const phrase = recordWrong([], { en: 'a quarter of', zh: '四分之一', word: 'quarter', wordIndex: 1, phonetic: '/ˈkwɔːrtər/' }, NOW)
+    expect(phrase[0].phonetic).toBeUndefined()
+  })
 })
 
 describe('reviewEntry', () => {
